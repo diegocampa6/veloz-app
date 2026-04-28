@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Veloz">
+<meta name="theme-color" content="#0A0C10">
+<title>Veloz — Ciclismo grupal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#0A0C10;--bg2:#12151C;--bg3:#1A1E28;--bg4:#222736;
+  --accent:#C8FF00;--accent2:#FF6B35;--accent3:#3B82F6;
+  --text:#F0F2F8;--text2:#8892A4;--text3:#4A5568;
+  --card:#161B26;--border:#252B3A;
+  --font:'Syne',sans-serif;--body:'DM Sans',sans-serif;
+  --r:16px;--r2:12px;--r3:8px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+html,body{
+  height:100%;width:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--body);
+  overflow:hidden;
+  overscroll-behavior:none;
+}
+.app{
+  width:100%;
+  height:100%;
+  max-width:430px;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  overflow:hidden;
+  background:var(--bg);
+}
+
+/* STATUS BAR */
+.status-bar{
+  padding:calc(var(--safe-top) + 10px) 20px 8px;
+  display:flex;justify-content:space-between;align-items:center;
+  flex-shrink:0;background:var(--bg);
+}
+.status-bar .time{font-family:var(--font);font-size:13px;font-weight:700;color:var(--text);}
+.status-icons{display:flex;gap:5px;align-items:center;}
+.status-icons span{font-size:11px;color:var(--text2);font-family:var(--font);font-weight:600;}
+
+/* SCREENS */
+.screen{display:none;flex-direction:column;flex:1;overflow:hidden;}
+.screen.active{display:flex;}
+
+.scroll-area{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.scroll-area::-webkit-scrollbar{display:none;}
+
+/* BOTTOM NAV */
+.nav-bar{
+  display:flex;
+  background:var(--bg2);
+  border-top:1px solid var(--border);
+  padding:8px 0 calc(var(--safe-bottom) + 10px);
+  flex-shrink:0;
+}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:.15s;position:relative;}
+.nav-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;}
+.nav-label{font-size:10px;color:var(--text3);font-family:var(--font);font-weight:600;transition:.15s;}
+.nav-item.active .nav-label{color:var(--accent);}
+
+/* HEADER */
+.screen-header{padding:14px 20px 10px;flex-shrink:0;}
+.header-row{display:flex;align-items:center;justify-content:space-between;}
+.header-title{font-family:var(--font);font-size:24px;font-weight:800;color:var(--text);}
+.header-sub{font-size:13px;color:var(--text2);margin-top:2px;}
+.avatar-sm{width:38px;height:38px;border-radius:50%;background:var(--bg3);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--font);font-size:13px;font-weight:700;color:var(--accent);cursor:pointer;}
+
+/* PILLS */
+.pill{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--font);white-space:nowrap;}
+.pill-green{background:rgba(200,255,0,.12);color:var(--accent);border:1px solid rgba(200,255,0,.2);}
+.pill-orange{background:rgba(255,107,53,.12);color:var(--accent2);border:1px solid rgba(255,107,53,.2);}
+.pill-blue{background:rgba(59,130,246,.12);color:var(--accent3);border:1px solid rgba(59,130,246,.2);}
+.pill-gray{background:var(--bg3);color:var(--text2);border:1px solid var(--border);}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin:0 16px 12px;cursor:pointer;transition:border-color .15s,transform .1s;-webkit-user-select:none;}
+.card:active{transform:scale(.98);border-color:var(--accent);}
+.card-accent{width:3px;border-radius:2px;align-self:stretch;flex-shrink:0;}
+
+/* MAP */
+.map-area{margin:0 16px 12px;border-radius:var(--r);overflow:hidden;height:170px;background:var(--bg3);position:relative;border:1px solid var(--border);cursor:pointer;}
+.map-pin{position:absolute;width:30px;height:30px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:var(--font);cursor:pointer;transition:transform .15s;z-index:2;}
+.map-pin:active{transform:scale(1.2);}
+.map-pin-accent{background:var(--accent);border-color:var(--bg);color:var(--bg);box-shadow:0 0 0 6px rgba(200,255,0,.15);}
+.map-pin-orange{background:var(--accent2);border-color:var(--bg);color:#fff;box-shadow:0 0 0 6px rgba(255,107,53,.15);}
+.map-pin-blue{background:var(--accent3);border-color:var(--bg);color:#fff;box-shadow:0 0 0 6px rgba(59,130,246,.15);}
+
+/* STATS */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 12px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px;}
+.stat-val{font-family:var(--font);font-size:26px;font-weight:800;color:var(--text);}
+.stat-label{font-size:11px;color:var(--text2);margin-top:3px;}
+
+/* PROFILE */
+.profile-hero{background:var(--bg2);padding:22px 20px 18px;text-align:center;border-bottom:1px solid var(--border);}
+.avatar-lg{width:78px;height:78px;border-radius:50%;background:var(--bg3);border:3px solid var(--accent);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-family:var(--font);font-size:26px;font-weight:800;color:var(--accent);}
+.profile-name{font-family:var(--font);font-size:22px;font-weight:800;}
+.profile-bio{font-size:13px;color:var(--text2);margin-top:5px;}
+
+/* SECTION LABEL */
+.section-label{padding:4px 20px 8px;font-size:11px;font-weight:700;font-family:var(--font);color:var(--text3);text-transform:uppercase;letter-spacing:.07em;}
+
+/* RIDER ROWS */
+.rider-row{display:flex;align-items:center;gap:12px;padding:12px 16px;}
+.rider-row+.rider-row{border-top:1px solid var(--border);}
+
+/* FORM */
+.form-group{margin:0 16px 14px;}
+.form-label{font-size:11px;font-weight:700;font-family:var(--font);color:var(--text2);margin-bottom:7px;display:block;text-transform:uppercase;letter-spacing:.05em;}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r3);padding:13px 14px;font-size:15px;color:var(--text);font-family:var(--body);outline:none;transition:border-color .15s;-webkit-appearance:none;}
+.form-input:focus{border-color:var(--accent);}
+.level-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.level-btn{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r3);padding:12px 8px;text-align:center;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--font);color:var(--text2);transition:.15s;}
+.level-btn.selected{border-color:var(--accent);color:var(--accent);background:rgba(200,255,0,.08);}
+.submit-btn{margin:0 16px;width:calc(100% - 32px);background:var(--accent);color:var(--bg);font-family:var(--font);font-size:15px;font-weight:700;border:none;border-radius:var(--r2);padding:15px;cursor:pointer;transition:opacity .15s;}
+.submit-btn:active{opacity:.85;}
+
+/* CHAT */
+.chat-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px;scrollbar-width:none;display:flex;flex-direction:column;gap:12px;}
+.chat-area::-webkit-scrollbar{display:none;}
+.msg{max-width:80%;display:flex;flex-direction:column;gap:4px;}
+.msg.mine{align-self:flex-end;align-items:flex-end;}
+.msg.other{align-self:flex-start;align-items:flex-start;}
+.msg-bubble{padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.45;}
+.msg.mine .msg-bubble{background:var(--accent);color:var(--bg);border-bottom-right-radius:4px;}
+.msg.other .msg-bubble{background:var(--bg3);color:var(--text);border-bottom-left-radius:4px;}
+.msg-meta{font-size:10px;color:var(--text3);}
+.chat-input-row{padding:10px 16px calc(var(--safe-bottom) + 6px);display:flex;gap:8px;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg);}
+.chat-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:22px;padding:11px 16px;font-size:14px;color:var(--text);font-family:var(--body);outline:none;-webkit-appearance:none;}
+.send-btn{width:42px;height:42px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+
+/* OVERLAYS */
+.overlay{position:absolute;inset:0;background:var(--bg);z-index:50;display:none;flex-direction:column;overflow:hidden;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);}
+.overlay.open{display:flex;transform:translateX(0);}
+.overlay-header{padding:calc(var(--safe-top) + 14px) 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.back-btn{width:40px;height:40px;background:var(--bg2);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid var(--border);flex-shrink:0;}
+.overlay-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.overlay-scroll::-webkit-scrollbar{display:none;}
+
+/* NOTIF DOT */
+.notif-dot{width:8px;height:8px;background:var(--accent2);border-radius:50%;position:absolute;top:1px;right:1px;border:1.5px solid var(--bg2);}
+
+/* FILTER ROW */
+.filter-row{display:flex;gap:8px;padding:0 16px 14px;overflow-x:auto;scrollbar-width:none;flex-shrink:0;}
+.filter-row::-webkit-scrollbar{display:none;}
+
+/* TOAST */
+#toast{
+  position:fixed;
+  bottom:calc(var(--safe-bottom) + 80px);
+  left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--bg3);border:1px solid rgba(200,255,0,.3);
+  border-radius:var(--r2);padding:12px 20px;
+  font-size:13px;color:var(--text);font-family:var(--font);font-weight:600;
+  z-index:200;opacity:0;transition:opacity .25s,transform .25s;
+  white-space:nowrap;pointer-events:none;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* SPLASH */
+#splash{
+  position:fixed;inset:0;background:var(--bg);z-index:300;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  transition:opacity .4s;
+}
+#splash.hide{opacity:0;pointer-events:none;}
+.splash-logo{font-family:var(--font);font-size:42px;font-weight:800;color:var(--accent);letter-spacing:-.02em;}
+.splash-sub{font-size:14px;color:var(--text2);font-family:var(--body);}
+.splash-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1s ease infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.8);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.card{animation:fadeUp .3s ease both;}
+
+/* BADGE join */
+.join-btn{background:var(--accent);color:var(--bg);font-family:var(--font);font-size:15px;font-weight:700;border:none;border-radius:var(--r2);padding:15px;cursor:pointer;flex:1;}
+.join-btn:active{opacity:.85;}
+.icon-btn{width:50px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+
+/* DEMO BANNER */
+.demo-banner{
+  background:rgba(200,255,0,.06);border-bottom:1px solid rgba(200,255,0,.15);
+  padding:7px 16px;display:flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;
+}
+.demo-banner span{font-size:11px;color:var(--accent);font-family:var(--font);font-weight:700;letter-spacing:.05em;}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div style="position:relative;">
+    <div class="splash-logo">VELOZ</div>
+    <div style="position:absolute;top:-8px;right:-20px;background:var(--accent);color:var(--bg);font-size:9px;font-weight:800;font-family:'Syne',sans-serif;padding:2px 6px;border-radius:6px;">BETA</div>
+  </div>
+  <div class="splash-sub">Ciclismo grupal · Montevideo</div>
+  <div class="splash-dot" style="margin-top:16px;"></div>
+</div>
+
+<div class="app">
+
+  <!-- STATUS -->
+  <div class="status-bar">
+    <span class="time" id="clock">9:41</span>
+    <div class="status-icons">
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><rect x="0" y="5" width="3" height="7" rx="1" fill="#8892A4"/><rect x="4.5" y="3" width="3" height="9" rx="1" fill="#8892A4"/><rect x="9" y="1" width="3" height="11" rx="1" fill="#8892A4"/><rect x="13.5" y="0" width="2.5" height="12" rx="1" fill="#F0F2F8"/></svg>
+      <svg width="14" height="12" viewBox="0 0 14 12" fill="none"><path d="M7 3C8.9 3 10.6 3.8 11.8 5.1L13.5 3.3C11.8 1.3 9.5 0 7 0S2.2 1.3 0.5 3.3l1.7 1.8C3.4 3.8 5.1 3 7 3z" fill="#8892A4"/><path d="M7 6C8.1 6 9.1 6.4 9.8 7.2L11.5 5.4C10.3 4.2 8.7 3.5 7 3.5S3.7 4.2 2.5 5.4l1.7 1.8C4.9 6.4 5.9 6 7 6z" fill="#8892A4"/><circle cx="7" cy="10" r="2.2" fill="#F0F2F8"/></svg>
+      <span>87%</span>
+    </div>
+  </div>
+
+  <div class="demo-banner">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#C8FF00" stroke-width="1.2"/><path d="M6 4v3M6 8.5v.5" stroke="#C8FF00" stroke-width="1.2" stroke-linecap="round"/></svg>
+    <span>DEMO INTERACTIVO — VELOZ APP</span>
+  </div>
+
+  <!-- ========== DISCOVER ========== -->
+  <div id="s-discover" class="screen active">
+    <div class="screen-header">
+      <div class="header-row">
+        <div>
+          <div class="header-title">Descubrir</div>
+          <div class="header-sub">Montevideo · 8 rutas hoy</div>
+        </div>
+        <div class="avatar-sm" onclick="goScreen('s-profile')">MR</div>
+      </div>
+    </div>
+    <div class="filter-row">
+      <div class="pill pill-green">Todas</div>
+      <div class="pill pill-gray">Esta mañana</div>
+      <div class="pill pill-gray">Principiante</div>
+      <div class="pill pill-gray">+20km</div>
+      <div class="pill pill-gray">Rambla</div>
+    </div>
+
+    <!-- MAP -->
+    <div class="map-area" onclick="goOverlay('o-route1')">
+      <svg style="position:absolute;inset:0;opacity:.25;" width="100%" height="100%" viewBox="0 0 390 170" preserveAspectRatio="xMidYMid slice">
+        <line x1="0" y1="42" x2="390" y2="42" stroke="#8892A4" stroke-width="1"/>
+        <line x1="0" y1="85" x2="390" y2="85" stroke="#8892A4" stroke-width="1"/>
+        <line x1="0" y1="128" x2="390" y2="128" stroke="#8892A4" stroke-width="1"/>
+        <line x1="90" y1="0" x2="90" y2="170" stroke="#8892A4" stroke-width="1"/>
+        <line x1="195" y1="0" x2="195" y2="170" stroke="#8892A4" stroke-width="1"/>
+        <line x1="300" y1="0" x2="300" y2="170" stroke="#8892A4" stroke-width="1"/>
+      </svg>
+      <div style="position:absolute;left:30px;top:70px;width:320px;height:9px;background:#222736;border-radius:5px;transform:rotate(-4deg);"></div>
+      <div style="position:absolute;left:58px;top:30px;width:9px;height:110px;background:#222736;border-radius:5px;"></div>
+      <div style="position:absolute;left:210px;top:20px;width:9px;height:130px;background:#222736;border-radius:5px;"></div>
+      <div style="position:absolute;left:58px;top:118px;width:165px;height:7px;background:#222736;border-radius:5px;"></div>
+      <svg style="position:absolute;" width="100%" height="100%" viewBox="0 0 390 170" fill="none" preserveAspectRatio="xMidYMid slice">
+        <path d="M68 68 Q130 35 215 50 Q290 65 348 52" stroke="#C8FF00" stroke-width="2.5" stroke-dasharray="7 4" opacity=".6" fill="none"/>
+      </svg>
+      <div class="map-pin map-pin-accent" style="left:60px;top:50px;" onclick="event.stopPropagation();goOverlay('o-route1')">3</div>
+      <div class="map-pin map-pin-orange" style="left:180px;top:28px;" onclick="event.stopPropagation();goOverlay('o-route2')">2</div>
+      <div class="map-pin map-pin-blue" style="left:255px;top:88px;" onclick="event.stopPropagation();goOverlay('o-route3')">5</div>
+      <div style="position:absolute;bottom:10px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:11px;color:#8892A4;font-family:'Syne',sans-serif;font-weight:600;">3 rutas cercanas</span>
+        <div class="pill pill-green" style="font-size:10px;padding:3px 10px;">Ver todas →</div>
+      </div>
+    </div>
+
+    <div class="scroll-area">
+      <div class="section-label">Próximas rutas</div>
+
+      <div class="card" onclick="goOverlay('o-route1')" style="animation-delay:0s;">
+        <div style="display:flex;gap:10px;">
+          <div class="card-accent" style="background:var(--accent);"></div>
+          <div style="flex:1;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;">Rambla al amanecer</div>
+              <div class="pill pill-green" style="font-size:10px;padding:3px 9px;">Hoy 06:30</div>
+            </div>
+            <div style="font-size:12px;color:#8892A4;margin-bottom:10px;line-height:1.5;">Buceo → Carrasco y vuelta · 34 km · Pace 25 km/h</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <div class="pill pill-green">Intermedio</div>
+                <div class="pill pill-gray">34 km</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div style="display:flex;">
+                  <div style="width:24px;height:24px;border-radius:50%;background:#3B82F6;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;margin-right:-7px;">JM</div>
+                  <div style="width:24px;height:24px;border-radius:50%;background:#C8FF00;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#0A0C10;margin-right:-7px;">AS</div>
+                  <div style="width:24px;height:24px;border-radius:50%;background:#FF6B35;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;">+1</div>
+                </div>
+                <span style="font-size:11px;color:#8892A4;">3/8</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" onclick="goOverlay('o-route2')" style="animation-delay:.06s;">
+        <div style="display:flex;gap:10px;">
+          <div class="card-accent" style="background:var(--accent2);"></div>
+          <div style="flex:1;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;">Cerro y vuelta</div>
+              <div class="pill pill-orange" style="font-size:10px;padding:3px 9px;">Hoy 07:00</div>
+            </div>
+            <div style="font-size:12px;color:#8892A4;margin-bottom:10px;line-height:1.5;">Parque Batlle → Cerro → Regreso · 48 km</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div style="display:flex;gap:6px;">
+                <div class="pill pill-orange">Avanzado</div>
+                <div class="pill pill-gray">48 km</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div style="display:flex;">
+                  <div style="width:24px;height:24px;border-radius:50%;background:#8B5CF6;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;margin-right:-7px;">CP</div>
+                  <div style="width:24px;height:24px;border-radius:50%;background:#EC4899;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;">LV</div>
+                </div>
+                <span style="font-size:11px;color:#8892A4;">2/6</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" onclick="goOverlay('o-route3')" style="animation-delay:.12s;">
+        <div style="display:flex;gap:10px;">
+          <div class="card-accent" style="background:var(--accent3);"></div>
+          <div style="flex:1;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;">Parque Rodó fácil</div>
+              <div class="pill pill-blue" style="font-size:10px;padding:3px 9px;">Mañana 08:00</div>
+            </div>
+            <div style="font-size:12px;color:#8892A4;margin-bottom:10px;line-height:1.5;">Museo → Parque → Costa · 18 km · Pace suave</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div style="display:flex;gap:6px;">
+                <div class="pill pill-blue">Principiante</div>
+                <div class="pill pill-gray">18 km</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div style="display:flex;">
+                  <div style="width:24px;height:24px;border-radius:50%;background:#10B981;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;margin-right:-7px;">TR</div>
+                  <div style="width:24px;height:24px;border-radius:50%;background:#F59E0B;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;margin-right:-7px;">MG</div>
+                  <div style="width:24px;height:24px;border-radius:50%;background:#6366F1;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;margin-right:-7px;">NA</div>
+                  <div style="width:24px;height:24px;border-radius:50%;background:#EF4444;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;">+2</div>
+                </div>
+                <span style="font-size:11px;color:#8892A4;">5/10</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="height:20px;"></div>
+    </div>
+
+    <div class="nav-bar">
+      <div class="nav-item active" onclick="goScreen('s-discover')">
+        <div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="9" stroke="#C8FF00" stroke-width="1.5"/><circle cx="11" cy="11" r="3" fill="#C8FF00"/><line x1="11" y1="2" x2="11" y2="5.5" stroke="#C8FF00" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="16.5" x2="11" y2="20" stroke="#C8FF00" stroke-width="1.5" stroke-linecap="round"/><line x1="2" y1="11" x2="5.5" y2="11" stroke="#C8FF00" stroke-width="1.5" stroke-linecap="round"/><line x1="16.5" y1="11" x2="20" y2="11" stroke="#C8FF00" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        <div class="nav-label">Descubrir</div>
+      </div>
+      <div class="nav-item" onclick="goScreen('s-create')">
+        <div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="16" height="16" rx="4.5" stroke="#4A5568" stroke-width="1.5"/><line x1="11" y1="7" x2="11" y2="15" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="7" y1="11" x2="15" y2="11" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        <div class="nav-label">Crear</div>
+      </div>
+      <div class="nav-item" onclick="goScreen('s-chat')" style="position:relative;">
+        <div class="nav-icon" style="position:relative;"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 4.5a1 1 0 011-1h14a1 1 0 011 1v10a1 1 0 01-1 1H8l-5 3.5V4.5z" stroke="#4A5568" stroke-width="1.5" stroke-linejoin="round"/></svg><div class="notif-dot"></div></div>
+        <div class="nav-label">Chat</div>
+      </div>
+      <div class="nav-item" onclick="goScreen('s-profile')">
+        <div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="8" r="4" stroke="#4A5568" stroke-width="1.5"/><path d="M3 19c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        <div class="nav-label">Perfil</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== CREATE ========== -->
+  <div id="s-create" class="screen">
+    <div class="screen-header">
+      <div class="header-row">
+        <div><div class="header-title">Nueva ruta</div><div class="header-sub">Organiza tu próxima salida</div></div>
+      </div>
+    </div>
+    <div class="scroll-area" style="padding-top:4px;">
+      <div class="form-group">
+        <label class="form-label">Nombre de la ruta</label>
+        <input class="form-input" type="text" placeholder="Ej: Vuelta del Cerro al amanecer">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Punto de encuentro</label>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r3);height:90px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;" onclick="showToast('📍 Selector de mapa disponible en la app real')">
+          <svg style="position:absolute;opacity:.15;" width="100%" height="90" viewBox="0 0 390 90" preserveAspectRatio="xMidYMid slice"><line x1="0" y1="22" x2="390" y2="22" stroke="#8892A4" stroke-width="1"/><line x1="0" y1="55" x2="390" y2="55" stroke="#8892A4" stroke-width="1"/><line x1="90" y1="0" x2="90" y2="90" stroke="#8892A4" stroke-width="1"/><line x1="195" y1="0" x2="195" y2="90" stroke="#8892A4" stroke-width="1"/><line x1="300" y1="0" x2="300" y2="90" stroke="#8892A4" stroke-width="1"/></svg>
+          <div style="text-align:center;z-index:1;"><div style="font-size:24px;margin-bottom:5px;">📍</div><div style="font-size:13px;color:var(--text2);font-family:'Syne',sans-serif;font-weight:600;">Toca para seleccionar en mapa</div></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 14px;">
+        <div><label class="form-label">Fecha</label><input class="form-input" type="text" value="Dom 28 Abr"></div>
+        <div><label class="form-label">Hora de salida</label><input class="form-input" type="text" value="06:30"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 14px;">
+        <div><label class="form-label">Distancia (km)</label><input class="form-input" type="text" value="34"></div>
+        <div><label class="form-label">Plazas máx.</label><input class="form-input" type="text" value="8"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nivel requerido</label>
+        <div class="level-grid">
+          <div class="level-btn" onclick="selectLevel(this)">Principiante</div>
+          <div class="level-btn selected" onclick="selectLevel(this)">Intermedio</div>
+          <div class="level-btn" onclick="selectLevel(this)">Avanzado</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <textarea class="form-input" rows="3" placeholder="Cuéntale al grupo sobre la ruta, pace esperado, qué llevar..." style="resize:none;"></textarea>
+      </div>
+      <button class="submit-btn" onclick="showToast('✅ ¡Ruta publicada! El grupo ya puede unirse.')">Publicar ruta</button>
+      <div style="height:20px;"></div>
+    </div>
+    <div class="nav-bar">
+      <div class="nav-item" onclick="goScreen('s-discover')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="9" stroke="#4A5568" stroke-width="1.5"/><circle cx="11" cy="11" r="3" fill="#4A5568"/><line x1="11" y1="2" x2="11" y2="5.5" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="16.5" x2="11" y2="20" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="2" y1="11" x2="5.5" y2="11" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="16.5" y1="11" x2="20" y2="11" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Descubrir</div></div>
+      <div class="nav-item active" onclick="goScreen('s-create')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="16" height="16" rx="4.5" stroke="#C8FF00" stroke-width="1.5"/><line x1="11" y1="7" x2="11" y2="15" stroke="#C8FF00" stroke-width="1.5" stroke-linecap="round"/><line x1="7" y1="11" x2="15" y2="11" stroke="#C8FF00" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Crear</div></div>
+      <div class="nav-item" onclick="goScreen('s-chat')" style="position:relative;"><div class="nav-icon" style="position:relative;"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 4.5a1 1 0 011-1h14a1 1 0 011 1v10a1 1 0 01-1 1H8l-5 3.5V4.5z" stroke="#4A5568" stroke-width="1.5" stroke-linejoin="round"/></svg><div class="notif-dot"></div></div><div class="nav-label">Chat</div></div>
+      <div class="nav-item" onclick="goScreen('s-profile')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="8" r="4" stroke="#4A5568" stroke-width="1.5"/><path d="M3 19c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Perfil</div></div>
+    </div>
+  </div>
+
+  <!-- ========== CHAT ========== -->
+  <div id="s-chat" class="screen">
+    <div class="screen-header">
+      <div class="header-row">
+        <div><div class="header-title">Grupos</div><div class="header-sub">2 chats activos</div></div>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div class="card" onclick="goOverlay('o-chat1')">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:48px;height:48px;border-radius:14px;background:rgba(200,255,0,.1);border:1px solid rgba(200,255,0,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;">🌅</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;">Rambla al amanecer</div>
+              <div style="font-size:11px;color:var(--text3);">hace 5m</div>
+            </div>
+            <div style="font-size:13px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">JM: ¿Alguien trae bomba de aire? 🔧</div>
+          </div>
+          <div style="width:20px;height:20px;border-radius:50%;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">2</div>
+        </div>
+      </div>
+      <div class="card" onclick="goOverlay('o-chat2')">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:48px;height:48px;border-radius:14px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;">🌳</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;">Parque Rodó fácil</div>
+              <div style="font-size:11px;color:var(--text3);">hace 1h</div>
+            </div>
+            <div style="font-size:13px;color:var(--text2);">MG: Nos vemos en la entrada principal 👋</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-bar">
+      <div class="nav-item" onclick="goScreen('s-discover')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="9" stroke="#4A5568" stroke-width="1.5"/><circle cx="11" cy="11" r="3" fill="#4A5568"/><line x1="11" y1="2" x2="11" y2="5.5" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="16.5" x2="11" y2="20" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="2" y1="11" x2="5.5" y2="11" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="16.5" y1="11" x2="20" y2="11" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Descubrir</div></div>
+      <div class="nav-item" onclick="goScreen('s-create')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="16" height="16" rx="4.5" stroke="#4A5568" stroke-width="1.5"/><line x1="11" y1="7" x2="11" y2="15" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="7" y1="11" x2="15" y2="11" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Crear</div></div>
+      <div class="nav-item active" onclick="goScreen('s-chat')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 4.5a1 1 0 011-1h14a1 1 0 011 1v10a1 1 0 01-1 1H8l-5 3.5V4.5z" stroke="#C8FF00" stroke-width="1.5" stroke-linejoin="round"/></svg></div><div class="nav-label">Chat</div></div>
+      <div class="nav-item" onclick="goScreen('s-profile')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="8" r="4" stroke="#4A5568" stroke-width="1.5"/><path d="M3 19c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Perfil</div></div>
+    </div>
+  </div>
+
+  <!-- ========== PROFILE ========== -->
+  <div id="s-profile" class="screen">
+    <div class="profile-hero">
+      <div class="avatar-lg">MR</div>
+      <div class="profile-name">Matías Rodríguez</div>
+      <div class="profile-bio">Ciclista · Montevideo · Trek Domane</div>
+      <div style="display:flex;justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <div class="pill pill-green">Intermedio</div>
+        <div class="pill pill-gray">3 años rodando</div>
+        <div class="pill pill-gray">Ruta</div>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div class="stat-grid" style="margin-top:16px;">
+        <div class="stat-card"><div class="stat-val" style="color:var(--accent);">24</div><div class="stat-label">Rutas completadas</div></div>
+        <div class="stat-card"><div class="stat-val">612<span style="font-size:15px;color:var(--text2);"> km</span></div><div class="stat-label">Kilómetros totales</div></div>
+        <div class="stat-card"><div class="stat-val" style="color:var(--accent2);">8</div><div class="stat-label">Rutas creadas</div></div>
+        <div class="stat-card"><div class="stat-val">18</div><div class="stat-label">Ciclistas conocidos</div></div>
+      </div>
+      <div class="section-label" style="margin-top:4px;">Actividad reciente</div>
+      <div style="margin:0 16px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;">
+        <div class="rider-row"><div style="width:9px;height:9px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div><div style="flex:1;"><div style="font-size:14px;font-weight:500;">Rambla al amanecer</div><div style="font-size:12px;color:var(--text2);">34 km · Dom 21 Abr</div></div><div class="pill pill-green" style="font-size:10px;">✓ Completada</div></div>
+        <div class="rider-row"><div style="width:9px;height:9px;border-radius:50%;background:var(--accent3);flex-shrink:0;"></div><div style="flex:1;"><div style="font-size:14px;font-weight:500;">Circuito del lago</div><div style="font-size:12px;color:var(--text2);">28 km · Sáb 13 Abr</div></div><div class="pill pill-blue" style="font-size:10px;">✓ Completada</div></div>
+        <div class="rider-row"><div style="width:9px;height:9px;border-radius:50%;background:var(--accent2);flex-shrink:0;"></div><div style="flex:1;"><div style="font-size:14px;font-weight:500;">Cerro y vuelta</div><div style="font-size:12px;color:var(--text2);">48 km · Dom 7 Abr</div></div><div class="pill pill-orange" style="font-size:10px;">✓ Completada</div></div>
+      </div>
+      <div class="section-label">Logros desbloqueados</div>
+      <div style="display:flex;gap:10px;padding:0 16px 4px;overflow-x:auto;scrollbar-width:none;">
+        <div style="background:var(--card);border:1px solid rgba(200,255,0,.25);border-radius:var(--r2);padding:14px 12px;text-align:center;min-width:82px;flex-shrink:0;"><div style="font-size:26px;margin-bottom:7px;">🏅</div><div style="font-size:10px;font-family:'Syne',sans-serif;font-weight:700;color:var(--accent);">Madrugador</div></div>
+        <div style="background:var(--card);border:1px solid rgba(255,107,53,.25);border-radius:var(--r2);padding:14px 12px;text-align:center;min-width:82px;flex-shrink:0;"><div style="font-size:26px;margin-bottom:7px;">🔥</div><div style="font-size:10px;font-family:'Syne',sans-serif;font-weight:700;color:var(--accent2);">Organizador</div></div>
+        <div style="background:var(--card);border:1px solid rgba(59,130,246,.25);border-radius:var(--r2);padding:14px 12px;text-align:center;min-width:82px;flex-shrink:0;"><div style="font-size:26px;margin-bottom:7px;">💯</div><div style="font-size:10px;font-family:'Syne',sans-serif;font-weight:700;color:var(--accent3);">100 km</div></div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:14px 12px;text-align:center;min-width:82px;flex-shrink:0;opacity:.35;"><div style="font-size:26px;margin-bottom:7px;">🚀</div><div style="font-size:10px;font-family:'Syne',sans-serif;font-weight:700;color:var(--text3);">500 km</div></div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:14px 12px;text-align:center;min-width:82px;flex-shrink:0;opacity:.35;"><div style="font-size:26px;margin-bottom:7px;">👑</div><div style="font-size:10px;font-family:'Syne',sans-serif;font-weight:700;color:var(--text3);">Top 10</div></div>
+      </div>
+      <div style="height:20px;"></div>
+    </div>
+    <div class="nav-bar">
+      <div class="nav-item" onclick="goScreen('s-discover')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="9" stroke="#4A5568" stroke-width="1.5"/><circle cx="11" cy="11" r="3" fill="#4A5568"/><line x1="11" y1="2" x2="11" y2="5.5" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="16.5" x2="11" y2="20" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="2" y1="11" x2="5.5" y2="11" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="16.5" y1="11" x2="20" y2="11" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Descubrir</div></div>
+      <div class="nav-item" onclick="goScreen('s-create')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="16" height="16" rx="4.5" stroke="#4A5568" stroke-width="1.5"/><line x1="11" y1="7" x2="11" y2="15" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="7" y1="11" x2="15" y2="11" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Crear</div></div>
+      <div class="nav-item" onclick="goScreen('s-chat')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 4.5a1 1 0 011-1h14a1 1 0 011 1v10a1 1 0 01-1 1H8l-5 3.5V4.5z" stroke="#4A5568" stroke-width="1.5" stroke-linejoin="round"/></svg></div><div class="nav-label">Chat</div></div>
+      <div class="nav-item active" onclick="goScreen('s-profile')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="8" r="4" stroke="#C8FF00" stroke-width="1.5"/><path d="M3 19c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#C8FF00" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Perfil</div></div>
+    </div>
+  </div>
+
+  <!-- ====== OVERLAY: ROUTE DETAIL 1 ====== -->
+  <div id="o-route1" class="overlay">
+    <div class="overlay-header">
+      <div class="back-btn" onclick="closeOverlay('o-route1')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="#F0F2F8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div style="flex:1;"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;">Rambla al amanecer</div><div style="font-size:12px;color:var(--text2);">Hoy · 06:30 AM</div></div>
+      <div class="pill pill-green">Intermedio</div>
+    </div>
+    <div class="overlay-scroll">
+      <div style="height:130px;background:var(--bg3);position:relative;overflow:hidden;">
+        <svg style="position:absolute;opacity:.2;" width="100%" height="130" viewBox="0 0 390 130" preserveAspectRatio="xMidYMid slice"><line x1="0" y1="32" x2="390" y2="32" stroke="#8892A4" stroke-width="1"/><line x1="0" y1="65" x2="390" y2="65" stroke="#8892A4" stroke-width="1"/><line x1="0" y1="98" x2="390" y2="98" stroke="#8892A4" stroke-width="1"/><line x1="90" y1="0" x2="90" y2="130" stroke="#8892A4" stroke-width="1"/><line x1="195" y1="0" x2="195" y2="130" stroke="#8892A4" stroke-width="1"/><line x1="300" y1="0" x2="300" y2="130" stroke="#8892A4" stroke-width="1"/></svg>
+        <div style="position:absolute;left:35px;top:58px;width:310px;height:9px;background:#222736;border-radius:5px;transform:rotate(-3deg);"></div>
+        <div style="position:absolute;left:55px;top:28px;width:9px;height:90px;background:#222736;border-radius:5px;"></div>
+        <div style="position:absolute;left:220px;top:18px;width:9px;height:100px;background:#222736;border-radius:5px;"></div>
+        <svg style="position:absolute;" width="100%" height="130" viewBox="0 0 390 130" fill="none" preserveAspectRatio="xMidYMid slice">
+          <path d="M60 65 Q130 32 220 48 Q295 62 345 50" stroke="#C8FF00" stroke-width="2.5" stroke-dasharray="8 4" opacity=".7" fill="none"/>
+        </svg>
+        <div style="position:absolute;left:52px;top:57px;width:18px;height:18px;border-radius:50%;background:var(--accent);border:2.5px solid var(--bg);"></div>
+        <div style="position:absolute;left:337px;top:42px;width:18px;height:18px;border-radius:50%;background:var(--accent2);border:2.5px solid var(--bg);"></div>
+        <div style="position:absolute;bottom:10px;left:14px;"><span style="font-size:11px;color:var(--text2);font-family:'Syne',sans-serif;font-weight:600;">Buceo → Carrasco y vuelta</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);">
+        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent);">34</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">km</div></div>
+        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;">580</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">m desnivel</div></div>
+        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent2);">3/8</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">inscritos</div></div>
+      </div>
+      <div style="padding:16px 16px 14px;">
+        <div style="font-size:14px;color:var(--text2);line-height:1.65;">Salida desde Buceo recorriendo toda la rambla hasta Carrasco y regreso. Pace cómodo ~25 km/h. Llevá agua, bidón extra y una muda por si refresca.</div>
+      </div>
+      <div class="section-label">Participantes (3/8)</div>
+      <div style="margin:0 16px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;">
+        <div class="rider-row">
+          <div style="width:36px;height:36px;border-radius:50%;background:#3B82F6;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;flex-shrink:0;">JM</div>
+          <div style="flex:1;"><div style="font-size:14px;font-weight:500;">Javier Méndez</div><div style="font-size:12px;color:var(--text2);">Organizador · Intermedio · 42 rutas</div></div>
+          <div class="pill pill-green" style="font-size:10px;">Líder</div>
+        </div>
+        <div class="rider-row">
+          <div style="width:36px;height:36px;border-radius:50%;background:#C8FF00;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;color:#0A0C10;flex-shrink:0;">AS</div>
+          <div style="flex:1;"><div style="font-size:14px;font-weight:500;">Ana Suárez</div><div style="font-size:12px;color:var(--text2);">Intermedio · 18 rutas</div></div>
+          <div class="pill pill-gray" style="font-size:10px;">Confirmada</div>
+        </div>
+        <div class="rider-row">
+          <div style="width:36px;height:36px;border-radius:50%;background:#FF6B35;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;flex-shrink:0;">RG</div>
+          <div style="flex:1;"><div style="font-size:14px;font-weight:500;">Roberto González</div><div style="font-size:12px;color:var(--text2);">Intermedio · 32 rutas</div></div>
+          <div class="pill pill-gray" style="font-size:10px;">Confirmado</div>
+        </div>
+      </div>
+      <div style="padding:0 16px 20px;display:flex;gap:10px;">
+        <button class="join-btn" onclick="showToast('✅ ¡Te uniste! Revisá el chat del grupo.')">Unirse a la ruta</button>
+        <div class="icon-btn" onclick="goOverlay('o-chat1')"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M3 4.5a1 1 0 011-1h14a1 1 0 011 1v10a1 1 0 01-1 1H8l-5 3.5V4.5z" stroke="#F0F2F8" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== OVERLAY: ROUTE 2 ====== -->
+  <div id="o-route2" class="overlay">
+    <div class="overlay-header">
+      <div class="back-btn" onclick="closeOverlay('o-route2')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="#F0F2F8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div style="flex:1;"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;">Cerro y vuelta</div><div style="font-size:12px;color:var(--text2);">Hoy · 07:00 AM</div></div>
+      <div class="pill pill-orange">Avanzado</div>
+    </div>
+    <div class="overlay-scroll">
+      <div style="height:100px;background:var(--bg3);display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border);">
+        <div style="text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text2);">Parque Batlle → Cerro → Regreso</div><div style="font-size:12px;color:var(--text3);margin-top:5px;">48 km · Pace 28–32 km/h · 820 m desnivel</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);">
+        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent2);">48</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">km</div></div>
+        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;">820</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">m desnivel</div></div>
+        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent2);">2/6</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">inscritos</div></div>
+      </div>
+      <div style="padding:16px;"><div style="font-size:14px;color:var(--text2);line-height:1.65;">Ruta exigente con subida al Cerro. Ritmo alto, se requiere experiencia. Mínimo promedio de 30 km/h. Llevar comida y herramientas.</div></div>
+      <div style="padding:0 16px 20px;">
+        <button style="width:100%;background:var(--accent2);color:#fff;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;border:none;border-radius:var(--r2);padding:15px;cursor:pointer;" onclick="showToast('✅ ¡Te uniste a Cerro y vuelta!')">Unirse a la ruta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== OVERLAY: ROUTE 3 ====== -->
+  <div id="o-route3" class="overlay">
+    <div class="overlay-header">
+      <div class="back-btn" onclick="closeOverlay('o-route3')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="#F0F2F8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div style="flex:1;"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;">Parque Rodó fácil</div><div style="font-size:12px;color:var(--text2);">Mañana · 08:00 AM</div></div>
+      <div class="pill pill-blue">Principiante</div>
+    </div>
+    <div class="overlay-scroll">
+      <div style="height:100px;background:var(--bg3);display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border);">
+        <div style="text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text2);">Museo → Parque → Costa → Regreso</div><div style="font-size:12px;color:var(--text3);margin-top:5px;">18 km · Pace suave 18–22 km/h · 5/10 inscritos</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);">
+        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent3);">18</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">km</div></div>
+        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;">120</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">m desnivel</div></div>
+        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent3);">5/10</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">inscritos</div></div>
+      </div>
+      <div style="padding:16px;"><div style="font-size:14px;color:var(--text2);line-height:1.65;">Perfecta para nuevos ciclistas. Sin subidas fuertes, enfocada en disfrutar el parque y la rambla. Todos bienvenidos, cualquier tipo de bici.</div></div>
+      <div style="padding:0 16px 20px;">
+        <button style="width:100%;background:var(--accent3);color:#fff;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;border:none;border-radius:var(--r2);padding:15px;cursor:pointer;" onclick="showToast('✅ ¡Te uniste a Parque Rodó fácil!')">Unirse a la ruta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== OVERLAY: CHAT 1 ====== -->
+  <div id="o-chat1" class="overlay" style="display:none;flex-direction:column;">
+    <div class="overlay-header">
+      <div class="back-btn" onclick="closeOverlay('o-chat1')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="#F0F2F8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div style="flex:1;"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;">Rambla al amanecer</div><div style="font-size:12px;color:var(--text2);">3 participantes · Hoy 06:30</div></div>
+    </div>
+    <div class="chat-area" id="chat-msgs-1">
+      <div class="msg other"><div class="msg-meta">Javier · 20:14</div><div class="msg-bubble">Hola equipo! Mañana salimos a las 6:30 desde Buceo. Confirmen asistencia 🚴‍♂️</div></div>
+      <div class="msg other"><div class="msg-meta">Ana · 20:18</div><div class="msg-bubble">Confirmada! Llevaré bidón extra por si alguien necesita 💧</div></div>
+      <div class="msg mine"><div class="msg-meta">Tú · 20:21</div><div class="msg-bubble">Confirmado! ¿Alguien sabe el pronóstico del tiempo?</div></div>
+      <div class="msg other"><div class="msg-meta">Javier · 20:25</div><div class="msg-bubble">Sin lluvia hasta las 10am, estamos bien. Igual salimos antes del calor 💪</div></div>
+      <div class="msg other"><div class="msg-meta">Roberto · 20:31</div><div class="msg-bubble">¿Alguien trae bomba de aire? La mía quedó en casa 🔧</div></div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chat-input-1" placeholder="Mensaje al grupo..." onkeydown="if(event.key==='Enter')sendMsg('1')">
+      <div class="send-btn" onclick="sendMsg('1')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M16 2L2 7.5l6 2.5 2.5 6L16 2z" fill="#0A0C10"/></svg></div>
+    </div>
+  </div>
+
+  <!-- ====== OVERLAY: CHAT 2 ====== -->
+  <div id="o-chat2" class="overlay" style="display:none;flex-direction:column;">
+    <div class="overlay-header">
+      <div class="back-btn" onclick="closeOverlay('o-chat2')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="#F0F2F8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div style="flex:1;"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;">Parque Rodó fácil</div><div style="font-size:12px;color:var(--text2);">5 participantes · Mañana 08:00</div></div>
+    </div>
+    <div class="chat-area" id="chat-msgs-2">
+      <div class="msg other"><div class="msg-meta">Tomás · 09:40</div><div class="msg-bubble">Hola! Nos vemos mañana en la entrada del museo 🏛️</div></div>
+      <div class="msg other"><div class="msg-meta">Marina · 09:55</div><div class="msg-bubble">Primera vez que me uno, ¿el ritmo es muy exigente?</div></div>
+      <div class="msg other"><div class="msg-meta">Tomás · 10:02</div><div class="msg-bubble">Para nada! Es super relajado, vamos a disfrutar la vista 😊</div></div>
+      <div class="msg mine"><div class="msg-meta">Tú · 10:15</div><div class="msg-bubble">Confirmado! Nos vemos en la entrada principal 🚴</div></div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chat-input-2" placeholder="Mensaje al grupo..." onkeydown="if(event.key==='Enter')sendMsg('2')">
+      <div class="send-btn" onclick="sendMsg('2')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M16 2L2 7.5l6 2.5 2.5 6L16 2z" fill="#0A0C10"/></svg></div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast"></div>
+
+</div>
+
+<script>
+// Clock
+function updateClock(){
+  const now=new Date();
+  const h=now.getHours().toString().padStart(2,'0');
+  const m=now.getMinutes().toString().padStart(2,'0');
+  const el=document.getElementById('clock');
+  if(el) el.textContent=h+':'+m;
+}
+updateClock();
+setInterval(updateClock,10000);
+
+// Splash
+setTimeout(()=>{
+  const s=document.getElementById('splash');
+  s.classList.add('hide');
+  setTimeout(()=>s.style.display='none',400);
+},1800);
+
+// Navigation
+function goScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  // close all overlays
+  document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('open'));
+}
+
+function goOverlay(id){
+  document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('open'));
+  const el=document.getElementById(id);
+  el.style.display='flex';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('open')));
+  // scroll chat to bottom
+  const area=el.querySelector('.chat-area');
+  if(area) setTimeout(()=>area.scrollTop=area.scrollHeight,300);
+}
+
+function closeOverlay(id){
+  const el=document.getElementById(id);
+  el.classList.remove('open');
+  setTimeout(()=>{ if(!el.classList.contains('open')) el.style.display='none'; },250);
+}
+
+// Level select
+function selectLevel(btn){
+  document.querySelectorAll('.level-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+// Chat send
+function sendMsg(chatId){
+  const input=document.getElementById('chat-input-'+chatId);
+  const text=input.value.trim();
+  if(!text)return;
+  const area=document.getElementById('chat-msgs-'+chatId);
+  const msg=document.createElement('div');
+  msg.className='msg mine';
+  msg.innerHTML='<div class="msg-meta">Tú · ahora</div><div class="msg-bubble">'+escapeHtml(text)+'</div>';
+  area.appendChild(msg);
+  input.value='';
+  area.scrollTop=area.scrollHeight;
+}
+function escapeHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// Toast
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// Prevent pull-to-refresh on iOS
+document.body.addEventListener('touchmove',function(e){
+  if(e.touches.length>1) return;
+},{passive:false});
+</script>
+</body>
+</html>
