@@ -73,6 +73,7 @@ html,body{
 .nav-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;}
 .nav-label{font-size:10px;color:var(--text3);font-family:var(--font);font-weight:600;transition:.15s;}
 .nav-item.active .nav-label{color:var(--accent);}
+.nav-badge{position:absolute;top:-3px;right:calc(50% - 18px);min-width:16px;height:16px;border-radius:8px;background:var(--accent2);color:#fff;font-size:9.5px;font-weight:700;font-family:var(--font);display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--bg2);}
 
 /* HEADER */
 .screen-header{padding:14px 20px 10px;flex-shrink:0;}
@@ -91,6 +92,8 @@ html,body{
 /* CARDS */
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin:0 16px 12px;cursor:pointer;transition:border-color .15s,transform .1s;-webkit-user-select:none;}
 .card:active{transform:scale(.98);border-color:var(--accent);}
+.card{overflow:hidden;}
+.card *{min-width:0;}
 .card-accent{width:3px;border-radius:2px;align-self:stretch;flex-shrink:0;}
 
 /* MAP */
@@ -159,6 +162,11 @@ html,body{
 /* FILTER ROW */
 .filter-row{display:flex;gap:8px;padding:0 16px 14px;overflow-x:auto;scrollbar-width:none;flex-shrink:0;}
 .filter-row::-webkit-scrollbar{display:none;}
+.filtro-select{appearance:none;-webkit-appearance:none;background:var(--bg3) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%238892A4' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>") no-repeat right 10px center;border:1px solid var(--border);color:var(--text);border-radius:999px;padding:7px 28px 7px 13px;font-size:12.5px;font-family:var(--font);font-weight:600;cursor:pointer;flex-shrink:0;outline:none;}
+.filtro-select.activo{border-color:var(--accent);color:var(--accent);}
+.filtro-toggle{display:flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:999px;padding:7px 14px;font-size:12.5px;font-family:var(--font);font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;}
+.filtro-toggle.activo{background:rgba(200,255,0,.15);border-color:var(--accent);color:var(--accent);}
+.empty-state{padding:40px 30px;text-align:center;}
 
 /* TOAST */
 #toast{
@@ -242,15 +250,25 @@ html,body{
       </div>
     </div>
     <div class="filter-row">
-      <div class="pill pill-green">Todas</div>
-      <div class="pill pill-gray">Esta mañana</div>
-      <div class="pill pill-gray">Principiante</div>
-      <div class="pill pill-gray">+20km</div>
-      <div class="pill pill-gray">Rambla</div>
+      <select class="filtro-select" id="f-modalidad" onchange="aplicarFiltros()">
+        <option value="">Todas</option>
+        <option value="ruta">Ruta</option>
+        <option value="mtb">MTB</option>
+        <option value="mixta">Mixta</option>
+      </select>
+      <select class="filtro-select" id="f-nivel" onchange="aplicarFiltros()">
+        <option value="">Todos</option>
+        <option value="principiante">Principiante</option>
+        <option value="intermedio">Intermedio</option>
+        <option value="avanzado">Avanzado</option>
+      </select>
+      <div class="filtro-toggle" id="f-mias" onclick="toggleMias()">
+        <span style="font-size:13px;">✓</span> Mis salidas
+      </div>
     </div>
 
     <!-- MAP -->
-    <div class="map-area" onclick="goOverlay('o-route1')">
+    <div class="map-area" onclick="goOverlay('o-mapa')">
       <svg style="position:absolute;inset:0;opacity:.25;" width="100%" height="100%" viewBox="0 0 390 170" preserveAspectRatio="xMidYMid slice">
         <line x1="0" y1="42" x2="390" y2="42" stroke="#8892A4" stroke-width="1"/>
         <line x1="0" y1="85" x2="390" y2="85" stroke="#8892A4" stroke-width="1"/>
@@ -271,14 +289,28 @@ html,body{
       <div class="map-pin map-pin-blue" style="left:255px;top:88px;" onclick="event.stopPropagation();goOverlay('o-route3')">5</div>
       <div style="position:absolute;bottom:10px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;">
         <span style="font-size:11px;color:#8892A4;font-family:'Syne',sans-serif;font-weight:600;">3 rutas cercanas</span>
-        <div class="pill pill-green" style="font-size:10px;padding:3px 10px;">Ver todas →</div>
+        <div class="pill pill-green" style="font-size:10px;padding:3px 10px;">Ver mapa →</div>
       </div>
     </div>
 
     <div class="scroll-area">
+      <div class="card" id="tarjeta-sin-marcar" style="border-color:var(--accent);background:linear-gradient(180deg,rgba(200,255,0,.07),transparent);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+          <div style="flex:1;">
+            <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;">Salida sin marcar</div>
+            <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:3px;">¿Cómo te fue en Circuito del lago?</div>
+            <div style="font-size:12px;color:var(--text2);">Sábado 13 de abril</div>
+          </div>
+          <div onclick="descartarAviso(event)" style="width:26px;height:26px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;color:var(--text3);font-size:15px;line-height:1;">×</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <div onclick="marcarResultado(event,'Completé')" style="flex:1;text-align:center;padding:9px;border-radius:var(--r3);background:var(--accent);color:#0A0C10;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Completé</div>
+          <div onclick="marcarResultado(event,'Abandoné')" style="flex:1;text-align:center;padding:9px;border-radius:var(--r3);background:var(--bg3);border:1px solid var(--border);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Abandoné</div>
+        </div>
+      </div>
       <div class="section-label">Próximas rutas</div>
 
-      <div class="card" onclick="goOverlay('o-route1')" style="animation-delay:0s;">
+      <div class="card ruta-card" data-modalidad="ruta" data-nivel="intermedio" data-mia="1" onclick="goOverlay('o-route1')" style="animation-delay:0s;">
         <div style="display:flex;gap:10px;">
           <div class="card-accent" style="background:var(--accent);"></div>
           <div style="flex:1;">
@@ -287,25 +319,21 @@ html,body{
               <div class="pill pill-green" style="font-size:10px;padding:3px 9px;">Hoy 06:30</div>
             </div>
             <div style="font-size:12px;color:#8892A4;margin-bottom:10px;line-height:1.5;">Buceo → Carrasco y vuelta · 34 km · Pace 25 km/h</div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;flex-direction:column;gap:8px;">
               <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <div class="pill" style="background:rgba(200,255,0,.15);color:var(--accent);border:1px solid rgba(200,255,0,.35);">✓ Anotado</div>
                 <div class="pill pill-green">Intermedio</div>
-                <div class="pill pill-gray">34 km</div>
+                <div class="pill pill-gray">Ruta</div>
               </div>
-              <div style="display:flex;align-items:center;gap:6px;">
-                <div style="display:flex;">
-                  <div style="width:24px;height:24px;border-radius:50%;background:#3B82F6;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;margin-right:-7px;">JM</div>
-                  <div style="width:24px;height:24px;border-radius:50%;background:#C8FF00;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#0A0C10;margin-right:-7px;">AS</div>
-                  <div style="width:24px;height:24px;border-radius:50%;background:#FF6B35;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;">+1</div>
-                </div>
-                <span style="font-size:11px;color:#8892A4;">3/8</span>
+              <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                <span style="font-size:11px;color:#8892A4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Van 3 — ya hay grupo</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="card" onclick="goOverlay('o-route2')" style="animation-delay:.06s;">
+      <div class="card ruta-card" data-modalidad="mtb" data-nivel="avanzado" data-mia="0" onclick="goOverlay('o-route2')" style="animation-delay:.06s;">
         <div style="display:flex;gap:10px;">
           <div class="card-accent" style="background:var(--accent2);"></div>
           <div style="flex:1;">
@@ -314,24 +342,20 @@ html,body{
               <div class="pill pill-orange" style="font-size:10px;padding:3px 9px;">Hoy 07:00</div>
             </div>
             <div style="font-size:12px;color:#8892A4;margin-bottom:10px;line-height:1.5;">Parque Batlle → Cerro → Regreso · 48 km</div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <div style="display:flex;gap:6px;">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
                 <div class="pill pill-orange">Avanzado</div>
-                <div class="pill pill-gray">48 km</div>
+                <div class="pill pill-gray">MTB</div>
               </div>
-              <div style="display:flex;align-items:center;gap:6px;">
-                <div style="display:flex;">
-                  <div style="width:24px;height:24px;border-radius:50%;background:#8B5CF6;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;margin-right:-7px;">CP</div>
-                  <div style="width:24px;height:24px;border-radius:50%;background:#EC4899;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;">LV</div>
-                </div>
-                <span style="font-size:11px;color:#8892A4;">2/6</span>
+              <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                <span style="font-size:11px;color:#8892A4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Van 2 — ya hay grupo</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="card" onclick="goOverlay('o-route3')" style="animation-delay:.12s;">
+      <div class="card ruta-card" data-modalidad="mixta" data-nivel="principiante" data-mia="1" onclick="goOverlay('o-route3')" style="animation-delay:.12s;">
         <div style="display:flex;gap:10px;">
           <div class="card-accent" style="background:var(--accent3);"></div>
           <div style="flex:1;">
@@ -340,25 +364,27 @@ html,body{
               <div class="pill pill-blue" style="font-size:10px;padding:3px 9px;">Mañana 08:00</div>
             </div>
             <div style="font-size:12px;color:#8892A4;margin-bottom:10px;line-height:1.5;">Museo → Parque → Costa · 18 km · Pace suave</div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <div style="display:flex;gap:6px;">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <div class="pill" style="background:rgba(200,255,0,.15);color:var(--accent);border:1px solid rgba(200,255,0,.35);">👑 Organizás vos</div>
                 <div class="pill pill-blue">Principiante</div>
-                <div class="pill pill-gray">18 km</div>
+                <div class="pill pill-gray">Mixta</div>
               </div>
-              <div style="display:flex;align-items:center;gap:6px;">
-                <div style="display:flex;">
-                  <div style="width:24px;height:24px;border-radius:50%;background:#10B981;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;margin-right:-7px;">TR</div>
-                  <div style="width:24px;height:24px;border-radius:50%;background:#F59E0B;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;margin-right:-7px;">MG</div>
-                  <div style="width:24px;height:24px;border-radius:50%;background:#6366F1;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;margin-right:-7px;">NA</div>
-                  <div style="width:24px;height:24px;border-radius:50%;background:#EF4444;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;">+2</div>
-                </div>
-                <span style="font-size:11px;color:#8892A4;">5/10</span>
+              <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                <span style="font-size:11px;color:#8892A4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Van 5 — se arma la salida</span>
               </div>
             </div>
           </div>
         </div>
       </div>
       <div style="height:20px;"></div>
+    
+      <div class="empty-state" id="empty-feed" style="display:none;">
+        <div style="font-size:38px;margin-bottom:12px;">🚴</div>
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:6px;" id="empty-titulo">No hay salidas con esos filtros</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.55;margin-bottom:16px;">Probá con otra modalidad o nivel.</div>
+        <div onclick="limpiarFiltros()" style="display:inline-block;padding:9px 18px;border-radius:999px;background:var(--accent);color:#0A0C10;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Limpiar filtros</div>
+      </div>
     </div>
 
     <div class="nav-bar">
@@ -374,7 +400,7 @@ html,body{
         <div class="nav-icon" style="position:relative;"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 4.5a1 1 0 011-1h14a1 1 0 011 1v10a1 1 0 01-1 1H8l-5 3.5V4.5z" stroke="#4A5568" stroke-width="1.5" stroke-linejoin="round"/></svg><div class="notif-dot"></div></div>
         <div class="nav-label">Chat</div>
       </div>
-      <div class="nav-item" onclick="goScreen('s-profile')">
+      <div class="nav-item" onclick="goScreen('s-profile')"><div class="nav-badge">1</div>
         <div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="8" r="4" stroke="#4A5568" stroke-width="1.5"/><path d="M3 19c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div>
         <div class="nav-label">Perfil</div>
       </div>
@@ -390,7 +416,23 @@ html,body{
     </div>
     <div class="scroll-area" style="padding-top:4px;">
       <div class="form-group">
-        <label class="form-label">Nombre de la ruta</label>
+        <label class="form-label">Modalidad</label>
+        <div style="display:flex;gap:8px;">
+          <div onclick="setFiltro(this,'ruta')" style="flex:1;text-align:center;padding:10px;border-radius:var(--r3);background:var(--accent);color:#0A0C10;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Ruta</div>
+          <div onclick="setFiltro(this,'mtb')" style="flex:1;text-align:center;padding:10px;border-radius:var(--r3);background:var(--bg3);border:1px solid var(--border);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">MTB</div>
+          <div onclick="setFiltro(this,'mixta')" style="flex:1;text-align:center;padding:10px;border-radius:var(--r3);background:var(--bg3);border:1px solid var(--border);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Mixta</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nivel requerido</label>
+        <div style="display:flex;gap:8px;">
+          <div onclick="setFiltro(this,'prin')" style="flex:1;text-align:center;padding:10px;border-radius:var(--r3);background:var(--bg3);border:1px solid var(--border);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Principiante</div>
+          <div onclick="setFiltro(this,'int')" style="flex:1;text-align:center;padding:10px;border-radius:var(--r3);background:var(--accent);color:#0A0C10;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Intermedio</div>
+          <div onclick="setFiltro(this,'avz')" style="flex:1;text-align:center;padding:10px;border-radius:var(--r3);background:var(--bg3);border:1px solid var(--border);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Avanzado</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nombre de la salida</label>
         <input class="form-input" type="text" placeholder="Ej: Vuelta del Cerro al amanecer">
       </div>
       <div class="form-group">
@@ -400,34 +442,29 @@ html,body{
           <div style="text-align:center;z-index:1;"><div style="font-size:24px;margin-bottom:5px;">📍</div><div style="font-size:13px;color:var(--text2);font-family:'Syne',sans-serif;font-weight:600;">Toca para seleccionar en mapa</div></div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 14px;">
-        <div><label class="form-label">Fecha</label><input class="form-input" type="text" value="Dom 28 Abr"></div>
-        <div><label class="form-label">Hora de salida</label><input class="form-input" type="text" value="06:30"></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 14px;">
-        <div><label class="form-label">Distancia (km)</label><input class="form-input" type="text" value="34"></div>
-        <div><label class="form-label">Plazas máx.</label><input class="form-input" type="text" value="8"></div>
-      </div>
       <div class="form-group">
-        <label class="form-label">Nivel requerido</label>
-        <div class="level-grid">
-          <div class="level-btn" onclick="selectLevel(this)">Principiante</div>
-          <div class="level-btn selected" onclick="selectLevel(this)">Intermedio</div>
-          <div class="level-btn" onclick="selectLevel(this)">Avanzado</div>
-        </div>
+        <label class="form-label">¿Dónde termina? <span style="color:var(--text3);font-weight:400;">(opcional)</span></label>
+        <input class="form-input" type="text" value="Volvemos al mismo punto" placeholder="Ej: Volvemos al mismo punto / Terminamos en Punta Gorda">
       </div>
+      <div style="display:grid;grid-template-columns:1.15fr 0.85fr 0.85fr;gap:8px;margin:0 16px 14px;">
+        <div><label class="form-label">Fecha</label><input class="form-input" type="text" value="Dom 28 Abr"></div>
+        <div><label class="form-label">Hora</label><input class="form-input" type="text" value="06:30"></div>
+        <div><label class="form-label">Distancia</label><input class="form-input" type="text" value="34 km"></div>
+      </div>
+      
       <div class="form-group">
         <label class="form-label">Descripción</label>
         <textarea class="form-input" rows="3" placeholder="Cuéntale al grupo sobre la ruta, pace esperado, qué llevar..." style="resize:none;"></textarea>
       </div>
       <button class="submit-btn" onclick="showToast('✅ ¡Ruta publicada! El grupo ya puede unirse.')">Publicar ruta</button>
       <div style="height:20px;"></div>
-    </div>
+          
+</div>
     <div class="nav-bar">
       <div class="nav-item" onclick="goScreen('s-discover')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="9" stroke="#4A5568" stroke-width="1.5"/><circle cx="11" cy="11" r="3" fill="#4A5568"/><line x1="11" y1="2" x2="11" y2="5.5" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="16.5" x2="11" y2="20" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="2" y1="11" x2="5.5" y2="11" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="16.5" y1="11" x2="20" y2="11" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Descubrir</div></div>
       <div class="nav-item active" onclick="goScreen('s-create')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="16" height="16" rx="4.5" stroke="#C8FF00" stroke-width="1.5"/><line x1="11" y1="7" x2="11" y2="15" stroke="#C8FF00" stroke-width="1.5" stroke-linecap="round"/><line x1="7" y1="11" x2="15" y2="11" stroke="#C8FF00" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Crear</div></div>
       <div class="nav-item" onclick="goScreen('s-chat')" style="position:relative;"><div class="nav-icon" style="position:relative;"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 4.5a1 1 0 011-1h14a1 1 0 011 1v10a1 1 0 01-1 1H8l-5 3.5V4.5z" stroke="#4A5568" stroke-width="1.5" stroke-linejoin="round"/></svg><div class="notif-dot"></div></div><div class="nav-label">Chat</div></div>
-      <div class="nav-item" onclick="goScreen('s-profile')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="8" r="4" stroke="#4A5568" stroke-width="1.5"/><path d="M3 19c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Perfil</div></div>
+      <div class="nav-item" onclick="goScreen('s-profile')"><div class="nav-badge">1</div><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="8" r="4" stroke="#4A5568" stroke-width="1.5"/><path d="M3 19c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Perfil</div></div>
     </div>
   </div>
 
@@ -435,10 +472,11 @@ html,body{
   <div id="s-chat" class="screen">
     <div class="screen-header">
       <div class="header-row">
-        <div><div class="header-title">Grupos</div><div class="header-sub">2 chats activos</div></div>
+        <div><div class="header-title">Grupos</div><div class="header-sub">2 activos · 2 en historial</div></div>
       </div>
     </div>
     <div class="scroll-area">
+      <div class="section-label" style="padding-top:10px;">Activos</div>
       <div class="card" onclick="goOverlay('o-chat1')">
         <div style="display:flex;align-items:center;gap:12px;">
           <div style="width:48px;height:48px;border-radius:14px;background:rgba(200,255,0,.1);border:1px solid rgba(200,255,0,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;">🌅</div>
@@ -464,47 +502,67 @@ html,body{
           </div>
         </div>
       </div>
+      <div class="section-label" style="padding-top:14px;">Historial</div>
+      <div class="card" style="opacity:.6;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:48px;height:48px;border-radius:14px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;">🏞️</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;">Circuito del lago</div>
+              <div style="font-size:11px;color:var(--text3);">13 Abr</div>
+            </div>
+            <div style="font-size:13px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">LV: Gracias a todos, buenísima salida 🙌</div>
+          </div>
+          <div class="pill pill-gray" style="font-size:10px;flex-shrink:0;">Salir</div>
+        </div>
+      </div>
+      <div class="card" style="opacity:.6;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:48px;height:48px;border-radius:14px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;">⛰️</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;">Sierra de Minas</div>
+              <div style="font-size:11px;color:var(--text3);">23 Mar</div>
+            </div>
+            <div style="font-size:13px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">CP: Nos vemos en la próxima 🚴</div>
+          </div>
+          <div class="pill pill-gray" style="font-size:10px;flex-shrink:0;">Salir</div>
+        </div>
+      </div>
+      <div style="padding:2px 20px 16px;font-size:11px;color:var(--text3);line-height:1.55;">Los chats pasan al historial solos cuando la salida ya ocurrió. Podés salir de cualquiera para quitarlo de tu lista.</div>
     </div>
     <div class="nav-bar">
       <div class="nav-item" onclick="goScreen('s-discover')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="9" stroke="#4A5568" stroke-width="1.5"/><circle cx="11" cy="11" r="3" fill="#4A5568"/><line x1="11" y1="2" x2="11" y2="5.5" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="16.5" x2="11" y2="20" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="2" y1="11" x2="5.5" y2="11" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="16.5" y1="11" x2="20" y2="11" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Descubrir</div></div>
       <div class="nav-item" onclick="goScreen('s-create')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="16" height="16" rx="4.5" stroke="#4A5568" stroke-width="1.5"/><line x1="11" y1="7" x2="11" y2="15" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="7" y1="11" x2="15" y2="11" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Crear</div></div>
       <div class="nav-item active" onclick="goScreen('s-chat')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 4.5a1 1 0 011-1h14a1 1 0 011 1v10a1 1 0 01-1 1H8l-5 3.5V4.5z" stroke="#C8FF00" stroke-width="1.5" stroke-linejoin="round"/></svg></div><div class="nav-label">Chat</div></div>
-      <div class="nav-item" onclick="goScreen('s-profile')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="8" r="4" stroke="#4A5568" stroke-width="1.5"/><path d="M3 19c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Perfil</div></div>
+      <div class="nav-item" onclick="goScreen('s-profile')"><div class="nav-badge">1</div><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="8" r="4" stroke="#4A5568" stroke-width="1.5"/><path d="M3 19c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Perfil</div></div>
     </div>
   </div>
 
   <!-- ========== PROFILE ========== -->
   <div id="s-profile" class="screen">
-    <div class="profile-hero">
+    <div class="profile-hero" style="position:relative;">
+      <div onclick="goOverlay('o-config')" style="position:absolute;top:14px;right:16px;width:36px;height:36px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z" stroke="#8892A4" stroke-width="1.6"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 008 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H2a2 2 0 110-4h.09A1.65 1.65 0 004.6 8a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 3.68 1.65 1.65 0 0010 2.17V2a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 8v0a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="#8892A4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
       <div class="avatar-lg">MR</div>
       <div class="profile-name">Matías Rodríguez</div>
-      <div class="profile-bio">Ciclista · Montevideo · Trek Domane</div>
+      <div class="profile-bio">Ciclista de Montevideo</div>
       <div style="display:flex;justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
-        <div class="pill pill-green">Intermedio</div>
-        <div class="pill pill-gray">3 años rodando</div>
         <div class="pill pill-gray">Ruta</div>
+        <div class="pill pill-gray">MTB</div>
       </div>
     </div>
     <div class="scroll-area">
       <div class="stat-grid" style="margin-top:16px;">
         <div class="stat-card"><div class="stat-val" style="color:var(--accent);">24</div><div class="stat-label">Rutas completadas</div></div>
-        <div class="stat-card"><div class="stat-val">612<span style="font-size:15px;color:var(--text2);"> km</span></div><div class="stat-label">Kilómetros totales</div></div>
         <div class="stat-card"><div class="stat-val" style="color:var(--accent2);">8</div><div class="stat-label">Rutas creadas</div></div>
-        <div class="stat-card"><div class="stat-val">18</div><div class="stat-label">Ciclistas conocidos</div></div>
       </div>
       <div class="section-label" style="margin-top:4px;">Actividad reciente</div>
       <div style="margin:0 16px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;">
-        <div class="rider-row"><div style="width:9px;height:9px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div><div style="flex:1;"><div style="font-size:14px;font-weight:500;">Rambla al amanecer</div><div style="font-size:12px;color:var(--text2);">34 km · Dom 21 Abr</div></div><div class="pill pill-green" style="font-size:10px;">✓ Completada</div></div>
-        <div class="rider-row"><div style="width:9px;height:9px;border-radius:50%;background:var(--accent3);flex-shrink:0;"></div><div style="flex:1;"><div style="font-size:14px;font-weight:500;">Circuito del lago</div><div style="font-size:12px;color:var(--text2);">28 km · Sáb 13 Abr</div></div><div class="pill pill-blue" style="font-size:10px;">✓ Completada</div></div>
-        <div class="rider-row"><div style="width:9px;height:9px;border-radius:50%;background:var(--accent2);flex-shrink:0;"></div><div style="flex:1;"><div style="font-size:14px;font-weight:500;">Cerro y vuelta</div><div style="font-size:12px;color:var(--text2);">48 km · Dom 7 Abr</div></div><div class="pill pill-orange" style="font-size:10px;">✓ Completada</div></div>
-      </div>
-      <div class="section-label">Logros desbloqueados</div>
-      <div style="display:flex;gap:10px;padding:0 16px 4px;overflow-x:auto;scrollbar-width:none;">
-        <div style="background:var(--card);border:1px solid rgba(200,255,0,.25);border-radius:var(--r2);padding:14px 12px;text-align:center;min-width:82px;flex-shrink:0;"><div style="font-size:26px;margin-bottom:7px;">🏅</div><div style="font-size:10px;font-family:'Syne',sans-serif;font-weight:700;color:var(--accent);">Madrugador</div></div>
-        <div style="background:var(--card);border:1px solid rgba(255,107,53,.25);border-radius:var(--r2);padding:14px 12px;text-align:center;min-width:82px;flex-shrink:0;"><div style="font-size:26px;margin-bottom:7px;">🔥</div><div style="font-size:10px;font-family:'Syne',sans-serif;font-weight:700;color:var(--accent2);">Organizador</div></div>
-        <div style="background:var(--card);border:1px solid rgba(59,130,246,.25);border-radius:var(--r2);padding:14px 12px;text-align:center;min-width:82px;flex-shrink:0;"><div style="font-size:26px;margin-bottom:7px;">💯</div><div style="font-size:10px;font-family:'Syne',sans-serif;font-weight:700;color:var(--accent3);">100 km</div></div>
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:14px 12px;text-align:center;min-width:82px;flex-shrink:0;opacity:.35;"><div style="font-size:26px;margin-bottom:7px;">🚀</div><div style="font-size:10px;font-family:'Syne',sans-serif;font-weight:700;color:var(--text3);">500 km</div></div>
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:14px 12px;text-align:center;min-width:82px;flex-shrink:0;opacity:.35;"><div style="font-size:26px;margin-bottom:7px;">👑</div><div style="font-size:10px;font-family:'Syne',sans-serif;font-weight:700;color:var(--text3);">Top 10</div></div>
+        <div class="rider-row"><div style="width:9px;height:9px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div><div style="flex:1;"><div style="font-size:14px;font-weight:500;">Ruta de los puentes</div><div style="font-size:12px;color:var(--text2);">31 km · Dom 30 Mar</div></div><div class="pill pill-green" style="font-size:10px;">✓ Completada</div></div>
+        <div class="rider-row" onclick="goOverlay('o-marcar')" style="cursor:pointer;"><div style="width:9px;height:9px;border-radius:50%;background:var(--accent2);flex-shrink:0;"></div><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:500;">Circuito del lago</div><div style="font-size:12px;color:var(--text2);">28 km · Sáb 13 Abr</div></div><div class="pill" style="font-size:10px;background:rgba(255,107,53,.15);color:var(--accent2);border:1px solid rgba(255,107,53,.35);flex-shrink:0;">Sin marcar</div><svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;margin-left:4px;"><path d="M7 4l5 5-5 5" stroke="#8892A4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="rider-row"><div style="width:9px;height:9px;border-radius:50%;background:var(--accent2);flex-shrink:0;"></div><div style="flex:1;"><div style="font-size:14px;font-weight:500;">Sierra de Minas</div><div style="font-size:12px;color:var(--text2);">52 km · Dom 23 Mar</div></div><div class="pill pill-orange" style="font-size:10px;">✓ Completada</div></div>
       </div>
       <div style="height:20px;"></div>
     </div>
@@ -512,7 +570,180 @@ html,body{
       <div class="nav-item" onclick="goScreen('s-discover')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="9" stroke="#4A5568" stroke-width="1.5"/><circle cx="11" cy="11" r="3" fill="#4A5568"/><line x1="11" y1="2" x2="11" y2="5.5" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="16.5" x2="11" y2="20" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="2" y1="11" x2="5.5" y2="11" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="16.5" y1="11" x2="20" y2="11" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Descubrir</div></div>
       <div class="nav-item" onclick="goScreen('s-create')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="16" height="16" rx="4.5" stroke="#4A5568" stroke-width="1.5"/><line x1="11" y1="7" x2="11" y2="15" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/><line x1="7" y1="11" x2="15" y2="11" stroke="#4A5568" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Crear</div></div>
       <div class="nav-item" onclick="goScreen('s-chat')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 4.5a1 1 0 011-1h14a1 1 0 011 1v10a1 1 0 01-1 1H8l-5 3.5V4.5z" stroke="#4A5568" stroke-width="1.5" stroke-linejoin="round"/></svg></div><div class="nav-label">Chat</div></div>
-      <div class="nav-item active" onclick="goScreen('s-profile')"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="8" r="4" stroke="#C8FF00" stroke-width="1.5"/><path d="M3 19c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#C8FF00" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Perfil</div></div>
+      <div class="nav-item active" onclick="goScreen('s-profile')"><div class="nav-badge">1</div><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="8" r="4" stroke="#C8FF00" stroke-width="1.5"/><path d="M3 19c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#C8FF00" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="nav-label">Perfil</div></div>
+    </div>
+  </div>
+
+  <!-- ====== OVERLAY: CONFIGURACION DE CUENTA ====== -->
+  <div id="o-config" class="overlay">
+    <div class="overlay-header">
+      <div class="back-btn" onclick="closeOverlay('o-config')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="#F0F2F8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div style="flex:1;"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;">Configuración de cuenta</div></div>
+    </div>
+    <div class="overlay-scroll">
+      <div class="section-label" style="padding-top:16px;">Perfil</div>
+      <div style="margin:0 16px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;">
+        <div class="rider-row" onclick="showToast('Editá tu nombre, ciudad y modalidades')" style="cursor:pointer;">
+          <div style="flex:1;"><div style="font-size:14px;font-weight:500;">Editar perfil</div><div style="font-size:12px;color:var(--text2);">Nombre, ciudad y modalidades</div></div>
+          <svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;"><path d="M7 4l5 5-5 5" stroke="#8892A4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <div class="section-label">Datos de acceso</div>
+      <div style="margin:0 16px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;">
+        <div class="rider-row" onclick="goOverlay('o-cambiar-email')" style="cursor:pointer;">
+          <div style="flex:1;"><div style="font-size:14px;font-weight:500;">Correo electrónico</div><div style="font-size:12px;color:var(--text2);">diego@gmail.com</div></div>
+          <svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;"><path d="M7 4l5 5-5 5" stroke="#8892A4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="rider-row" onclick="goOverlay('o-cambiar-pass')" style="cursor:pointer;">
+          <div style="flex:1;"><div style="font-size:14px;font-weight:500;">Contraseña</div><div style="font-size:12px;color:var(--text2);">••••••••</div></div>
+          <svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;"><path d="M7 4l5 5-5 5" stroke="#8892A4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <div class="section-label">Sesión</div>
+      <div style="margin:0 16px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;">
+        <div class="rider-row" onclick="showToast('Cerraste sesión. Volvés al login.')" style="cursor:pointer;">
+          <div style="flex:1;"><div style="font-size:14px;font-weight:500;color:var(--text);">Cerrar sesión</div></div>
+        </div>
+      </div>
+      <div style="margin:20px 16px 8px;border-top:1px solid var(--border);padding-top:16px;">
+        <div onclick="goOverlay('o-eliminar-cuenta')" style="text-align:center;padding:12px;border-radius:var(--r3);background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.25);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;color:var(--accent2);">Eliminar mi cuenta</div>
+      </div>
+      <div style="height:20px;"></div>
+    </div>
+  </div>
+
+  <!-- ====== OVERLAY: CAMBIAR EMAIL ====== -->
+  <div id="o-cambiar-email" class="overlay">
+    <div class="overlay-header">
+      <div class="back-btn" onclick="closeOverlay('o-cambiar-email')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="#F0F2F8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div style="flex:1;"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;">Cambiar correo</div></div>
+    </div>
+    <div class="overlay-scroll">
+      <div style="padding:24px 16px 16px;">
+        <div style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);border-radius:var(--r3);padding:12px 14px;margin-bottom:20px;font-size:13px;color:var(--text2);line-height:1.6;">Por seguridad, necesitamos confirmar que sos vos. Ingresá tu contraseña actual antes de cambiar el correo.</div>
+        <label class="form-label">Contraseña actual</label>
+        <input class="form-input" type="password" placeholder="Tu contraseña actual" style="margin-bottom:16px;">
+        <label class="form-label">Nuevo correo electrónico</label>
+        <input class="form-input" type="email" placeholder="nuevo@correo.com" style="margin-bottom:24px;">
+        <div onclick="showToast('Te enviamos un correo de verificación al nuevo email.')" style="width:100%;text-align:center;padding:14px;border-radius:var(--r2);background:var(--accent);color:#0A0C10;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer;">Confirmar cambio</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== OVERLAY: CAMBIAR CONTRASEÑA ====== -->
+  <div id="o-cambiar-pass" class="overlay">
+    <div class="overlay-header">
+      <div class="back-btn" onclick="closeOverlay('o-cambiar-pass')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="#F0F2F8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div style="flex:1;"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;">Cambiar contraseña</div></div>
+    </div>
+    <div class="overlay-scroll">
+      <div style="padding:24px 16px 16px;">
+        <div style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);border-radius:var(--r3);padding:12px 14px;margin-bottom:20px;font-size:13px;color:var(--text2);line-height:1.6;">Por seguridad, confirmá tu contraseña actual antes de elegir una nueva.</div>
+        <label class="form-label">Contraseña actual</label>
+        <input class="form-input" type="password" placeholder="Tu contraseña actual" style="margin-bottom:16px;">
+        <label class="form-label">Nueva contraseña</label>
+        <input class="form-input" type="password" placeholder="Mínimo 8 caracteres" style="margin-bottom:16px;">
+        <label class="form-label">Repetir nueva contraseña</label>
+        <input class="form-input" type="password" placeholder="Repetir nueva contraseña" style="margin-bottom:24px;">
+        <div onclick="showToast('Contraseña actualizada correctamente.')" style="width:100%;text-align:center;padding:14px;border-radius:var(--r2);background:var(--accent);color:#0A0C10;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer;">Cambiar contraseña</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== OVERLAY: ELIMINAR CUENTA ====== -->
+  <div id="o-eliminar-cuenta" class="overlay">
+    <div class="overlay-header">
+      <div class="back-btn" onclick="closeOverlay('o-eliminar-cuenta')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="#F0F2F8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div style="flex:1;"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;">Eliminar cuenta</div></div>
+    </div>
+    <div class="overlay-scroll">
+      <div style="padding:30px 20px 20px;text-align:center;">
+        <div style="font-size:44px;margin-bottom:16px;">⚠️</div>
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:10px;">¿Eliminar tu cuenta?</div>
+        <div style="font-size:13.5px;color:var(--text2);line-height:1.65;margin-bottom:24px;">Esto eliminará tu cuenta y todos tus datos personales de Veloz. Esta acción no se puede deshacer.<br><br>Tus mensajes en los chats van a seguir visibles para el resto del grupo como "Usuario eliminado".</div>
+        <div style="background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.25);border-radius:var(--r2);padding:12px 16px;margin-bottom:24px;font-size:13px;color:var(--accent2);line-height:1.6;text-align:left;">Organizás 1 salida próxima. Antes de eliminar tu cuenta, cancelala o transferile la organización a alguien del grupo.</div>
+        <div onclick="goScreen('s-discover');showToast('Cuenta eliminada. Hasta pronto.')" style="padding:14px;border-radius:var(--r2);background:rgba(255,107,53,.15);border:1px solid rgba(255,107,53,.4);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;color:var(--accent2);margin-bottom:10px;">Entiendo, eliminar mi cuenta</div>
+        <div onclick="closeOverlay('o-eliminar-cuenta')" style="padding:12px;font-size:13px;color:var(--text3);cursor:pointer;">Cancelar</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== OVERLAY: PERFIL DE OTRO CICLISTA ====== -->
+  <div id="o-perfil-otro" class="overlay">
+    <div class="overlay-header">
+      <div class="back-btn" onclick="closeOverlay('o-perfil-otro')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="#F0F2F8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div style="flex:1;"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;">Perfil</div></div>
+    </div>
+    <div class="overlay-scroll">
+      <div class="profile-hero">
+        <div class="avatar-lg" style="border-color:#3B82F6;color:#3B82F6;">JM</div>
+        <div class="profile-name">Javier Méndez</div>
+        <div class="profile-bio">Ciclista de Montevideo</div>
+        <div style="display:flex;justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
+          <div class="pill pill-gray">Ruta</div>
+        </div>
+      </div>
+      <div class="stat-grid" style="margin-top:16px;">
+        <div class="stat-card"><div class="stat-val" style="color:var(--accent);">42</div><div class="stat-label">Rutas completadas</div></div>
+        <div class="stat-card"><div class="stat-val" style="color:var(--accent2);">15</div><div class="stat-label">Rutas creadas</div></div>
+      </div>
+      <div class="section-label" style="margin-top:4px;">Actividad reciente</div>
+      <div style="margin:0 16px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;">
+        <div class="rider-row"><div style="width:9px;height:9px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:500;">Rambla al amanecer</div><div style="font-size:12px;color:var(--text2);">34 km · Organizada</div></div></div>
+        <div class="rider-row"><div style="width:9px;height:9px;border-radius:50%;background:var(--accent3);flex-shrink:0;"></div><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:500;">Ruta de los puentes</div><div style="font-size:12px;color:var(--text2);">31 km · Dom 30 Mar</div></div></div>
+        <div class="rider-row"><div style="width:9px;height:9px;border-radius:50%;background:var(--accent2);flex-shrink:0;"></div><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:500;">Costa este</div><div style="font-size:12px;color:var(--text2);">45 km · Sáb 22 Mar</div></div></div>
+      </div>
+      <div style="height:20px;"></div>
+    </div>
+  </div>
+
+  <!-- ====== OVERLAY: MARCAR RESULTADO ====== -->
+  <div id="o-marcar" class="overlay">
+    <div class="overlay-header">
+      <div class="back-btn" onclick="closeOverlay('o-marcar')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="#F0F2F8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div style="flex:1;"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;">Circuito del lago</div><div style="font-size:12px;color:var(--text2);">Sábado 13 de abril · 28 km</div></div>
+    </div>
+    <div class="overlay-scroll">
+      <div style="padding:30px 24px 20px;text-align:center;">
+        <div style="font-size:40px;margin-bottom:14px;">🚴</div>
+        <div style="font-family:'Syne',sans-serif;font-size:19px;font-weight:800;margin-bottom:8px;">¿Cómo te fue?</div>
+        <div style="font-size:13.5px;color:var(--text2);line-height:1.6;">Marcá el resultado de esta salida. Es opcional, pero suma a tu contador de rutas completadas.</div>
+      </div>
+      <div style="padding:0 16px;">
+        <div onclick="showToast('Marcada como completada'); closeOverlay('o-marcar');" style="background:var(--accent);color:#0A0C10;border-radius:var(--r2);padding:16px;text-align:center;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;">La completé</div>
+        <div onclick="showToast('Marcada como abandonada'); closeOverlay('o-marcar');" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:var(--r2);padding:16px;text-align:center;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;">La abandoné</div>
+        <div onclick="closeOverlay('o-marcar')" style="padding:14px;text-align:center;font-size:13px;color:var(--text3);cursor:pointer;">Ahora no</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== OVERLAY: MAPA COMPLETO ====== -->
+  <div id="o-mapa" class="overlay">
+    <div class="overlay-header">
+      <div class="back-btn" onclick="closeOverlay('o-mapa')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="#F0F2F8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div style="flex:1;"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;">Salidas cercanas</div><div style="font-size:12px;color:var(--text2);">3 salidas · Montevideo</div></div>
+    </div>
+    <div style="flex:1;position:relative;overflow:hidden;background:var(--bg3);">
+      <svg style="position:absolute;inset:0;opacity:.25;" width="100%" height="100%" viewBox="0 0 390 560" preserveAspectRatio="xMidYMid slice">
+        <line x1="0" y1="90" x2="390" y2="90" stroke="#8892A4" stroke-width="1"/>
+        <line x1="0" y1="200" x2="390" y2="200" stroke="#8892A4" stroke-width="1"/>
+        <line x1="0" y1="320" x2="390" y2="320" stroke="#8892A4" stroke-width="1"/>
+        <line x1="0" y1="440" x2="390" y2="440" stroke="#8892A4" stroke-width="1"/>
+        <line x1="80" y1="0" x2="80" y2="560" stroke="#8892A4" stroke-width="1"/>
+        <line x1="195" y1="0" x2="195" y2="560" stroke="#8892A4" stroke-width="1"/>
+        <line x1="310" y1="0" x2="310" y2="560" stroke="#8892A4" stroke-width="1"/>
+      </svg>
+      <div style="position:absolute;left:20px;top:170px;width:340px;height:11px;background:#222736;border-radius:6px;transform:rotate(-3deg);"></div>
+      <div style="position:absolute;left:60px;top:60px;width:11px;height:380px;background:#222736;border-radius:6px;"></div>
+      <div style="position:absolute;left:240px;top:40px;width:11px;height:420px;background:#222736;border-radius:6px;"></div>
+      <div style="position:absolute;left:60px;top:340px;width:200px;height:9px;background:#222736;border-radius:6px;"></div>
+      <div class="map-pin map-pin-accent" style="left:52px;top:150px;" onclick="goOverlay('o-route1')">3</div>
+      <div class="map-pin map-pin-orange" style="left:215px;top:80px;" onclick="goOverlay('o-route2')">2</div>
+      <div class="map-pin map-pin-blue" style="left:275px;top:330px;" onclick="goOverlay('o-route3')">5</div>
+      <div style="position:absolute;left:120px;top:255px;width:14px;height:14px;border-radius:50%;background:var(--accent3);border:3px solid var(--bg2);box-shadow:0 0 0 7px rgba(59,130,246,.2);"></div>
+      <div style="position:absolute;bottom:14px;left:14px;right:14px;background:rgba(10,12,16,.9);border:1px solid var(--border);border-radius:var(--r2);padding:11px 14px;font-size:11.5px;color:var(--text2);line-height:1.5;">
+        Tocá un pin para ver el detalle de esa salida. El punto azul es tu ubicación.
+      </div>
     </div>
   </div>
 
@@ -521,7 +752,10 @@ html,body{
     <div class="overlay-header">
       <div class="back-btn" onclick="closeOverlay('o-route1')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="#F0F2F8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <div style="flex:1;"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;">Rambla al amanecer</div><div style="font-size:12px;color:var(--text2);">Hoy · 06:30 AM</div></div>
-      <div class="pill pill-green">Intermedio</div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;">
+        <div class="pill pill-gray" style="font-size:10px;">Ruta</div>
+        <div class="pill pill-green" style="font-size:10px;">Intermedio</div>
+      </div>
     </div>
     <div class="overlay-scroll">
       <div style="height:130px;background:var(--bg3);position:relative;overflow:hidden;">
@@ -536,34 +770,33 @@ html,body{
         <div style="position:absolute;left:337px;top:42px;width:18px;height:18px;border-radius:50%;background:var(--accent2);border:2.5px solid var(--bg);"></div>
         <div style="position:absolute;bottom:10px;left:14px;"><span style="font-size:11px;color:var(--text2);font-family:'Syne',sans-serif;font-weight:600;">Buceo → Carrasco y vuelta</span></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);">
         <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent);">34</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">km</div></div>
-        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;">580</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">m desnivel</div></div>
-        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent2);">3/8</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">inscritos</div></div>
+        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent2);">3</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">inscritos</div></div>
       </div>
       <div style="padding:16px 16px 14px;">
         <div style="font-size:14px;color:var(--text2);line-height:1.65;">Salida desde Buceo recorriendo toda la rambla hasta Carrasco y regreso. Pace cómodo ~25 km/h. Llevá agua, bidón extra y una muda por si refresca.</div>
       </div>
-      <div class="section-label">Participantes (3/8)</div>
+      <div class="section-label">Participantes (3)</div>
       <div style="margin:0 16px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;">
-        <div class="rider-row">
+        <div class="rider-row" onclick="event.stopPropagation();goOverlay('o-perfil-otro')" style="cursor:pointer;">
           <div style="width:36px;height:36px;border-radius:50%;background:#3B82F6;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;flex-shrink:0;">JM</div>
-          <div style="flex:1;"><div style="font-size:14px;font-weight:500;">Javier Méndez</div><div style="font-size:12px;color:var(--text2);">Organizador · Intermedio · 42 rutas</div></div>
-          <div class="pill pill-green" style="font-size:10px;">Líder</div>
+          <div style="flex:1;"><div style="font-size:14px;font-weight:500;">Javier Méndez</div><div style="font-size:12px;color:var(--text2);">Organizador · 42 rutas completadas</div></div>
+          <div class="pill pill-green" style="font-size:10px;">Líder</div><svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;margin-left:2px;"><path d="M7 4l5 5-5 5" stroke="#8892A4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
-        <div class="rider-row">
+        <div class="rider-row" onclick="event.stopPropagation();goOverlay('o-perfil-otro')" style="cursor:pointer;">
           <div style="width:36px;height:36px;border-radius:50%;background:#C8FF00;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;color:#0A0C10;flex-shrink:0;">AS</div>
-          <div style="flex:1;"><div style="font-size:14px;font-weight:500;">Ana Suárez</div><div style="font-size:12px;color:var(--text2);">Intermedio · 18 rutas</div></div>
-          <div class="pill pill-gray" style="font-size:10px;">Confirmada</div>
+          <div style="flex:1;"><div style="font-size:14px;font-weight:500;">Ana Suárez</div><div style="font-size:12px;color:var(--text2);">18 rutas completadas</div></div>
+          <div class="pill pill-gray" style="font-size:10px;">Inscripta</div><svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;margin-left:2px;"><path d="M7 4l5 5-5 5" stroke="#8892A4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
-        <div class="rider-row">
+        <div class="rider-row" onclick="event.stopPropagation();goOverlay('o-perfil-otro')" style="cursor:pointer;">
           <div style="width:36px;height:36px;border-radius:50%;background:#FF6B35;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;flex-shrink:0;">RG</div>
-          <div style="flex:1;"><div style="font-size:14px;font-weight:500;">Roberto González</div><div style="font-size:12px;color:var(--text2);">Intermedio · 32 rutas</div></div>
-          <div class="pill pill-gray" style="font-size:10px;">Confirmado</div>
+          <div style="flex:1;"><div style="font-size:14px;font-weight:500;">Roberto González</div><div style="font-size:12px;color:var(--text2);">32 rutas completadas</div></div>
+          <div class="pill pill-gray" style="font-size:10px;">Inscripto</div><svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;margin-left:2px;"><path d="M7 4l5 5-5 5" stroke="#8892A4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
       </div>
       <div style="padding:0 16px 20px;display:flex;gap:10px;">
-        <button class="join-btn" onclick="showToast('✅ ¡Te uniste! Revisá el chat del grupo.')">Unirse a la ruta</button>
+        <button class="join-btn" style="background:var(--bg3);border:1px solid var(--accent);color:var(--accent);" onclick="showToast('Ya estás anotado. Tocá de nuevo si querés bajarte.')">✓ Ya estás anotado</button>
         <div class="icon-btn" onclick="goOverlay('o-chat1')"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M3 4.5a1 1 0 011-1h14a1 1 0 011 1v10a1 1 0 01-1 1H8l-5 3.5V4.5z" stroke="#F0F2F8" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
       </div>
     </div>
@@ -574,16 +807,18 @@ html,body{
     <div class="overlay-header">
       <div class="back-btn" onclick="closeOverlay('o-route2')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="#F0F2F8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <div style="flex:1;"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;">Cerro y vuelta</div><div style="font-size:12px;color:var(--text2);">Hoy · 07:00 AM</div></div>
-      <div class="pill pill-orange">Avanzado</div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;">
+        <div class="pill pill-gray" style="font-size:10px;">MTB</div>
+        <div class="pill pill-orange" style="font-size:10px;">Avanzado</div>
+      </div>
     </div>
     <div class="overlay-scroll">
       <div style="height:100px;background:var(--bg3);display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border);">
-        <div style="text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text2);">Parque Batlle → Cerro → Regreso</div><div style="font-size:12px;color:var(--text3);margin-top:5px;">48 km · Pace 28–32 km/h · 820 m desnivel</div></div>
+        <div style="text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text2);">Parque Batlle → Cerro → Regreso</div><div style="font-size:12px;color:var(--text3);margin-top:5px;">48 km · Pace 28–32 km/h</div></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);">
         <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent2);">48</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">km</div></div>
-        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;">820</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">m desnivel</div></div>
-        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent2);">2/6</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">inscritos</div></div>
+        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent2);">2</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">inscritos</div></div>
       </div>
       <div style="padding:16px;"><div style="font-size:14px;color:var(--text2);line-height:1.65;">Ruta exigente con subida al Cerro. Ritmo alto, se requiere experiencia. Mínimo promedio de 30 km/h. Llevar comida y herramientas.</div></div>
       <div style="padding:0 16px 20px;">
@@ -597,20 +832,63 @@ html,body{
     <div class="overlay-header">
       <div class="back-btn" onclick="closeOverlay('o-route3')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="#F0F2F8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <div style="flex:1;"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;">Parque Rodó fácil</div><div style="font-size:12px;color:var(--text2);">Mañana · 08:00 AM</div></div>
-      <div class="pill pill-blue">Principiante</div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;">
+        <div class="pill pill-gray" style="font-size:10px;">Mixta</div>
+        <div class="pill pill-blue" style="font-size:10px;">Principiante</div>
+      </div>
     </div>
     <div class="overlay-scroll">
       <div style="height:100px;background:var(--bg3);display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border);">
-        <div style="text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text2);">Museo → Parque → Costa → Regreso</div><div style="font-size:12px;color:var(--text3);margin-top:5px;">18 km · Pace suave 18–22 km/h · 5/10 inscritos</div></div>
+        <div style="text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text2);">Museo → Parque → Costa → Regreso</div><div style="font-size:12px;color:var(--text3);margin-top:5px;">18 km · Pace suave 18–22 km/h · Van 5</div></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);">
         <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent3);">18</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">km</div></div>
-        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;">120</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">m desnivel</div></div>
-        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent3);">5/10</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">inscritos</div></div>
+        <div style="background:var(--bg2);padding:14px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent3);">5</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">inscritos</div></div>
       </div>
       <div style="padding:16px;"><div style="font-size:14px;color:var(--text2);line-height:1.65;">Perfecta para nuevos ciclistas. Sin subidas fuertes, enfocada en disfrutar el parque y la rambla. Todos bienvenidos, cualquier tipo de bici.</div></div>
+      <div class="section-label">Participantes (5)</div>
+      <div style="margin:0 16px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;">
+        <div class="rider-row" onclick="event.stopPropagation();goOverlay('o-perfil-otro')" style="cursor:pointer;">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;color:#0A0C10;flex-shrink:0;">MR</div>
+          <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:500;">Matías Rodríguez (vos)</div><div style="font-size:12px;color:var(--text2);">Organizador · 31 rutas completadas</div></div>
+          <div class="pill pill-green" style="font-size:10px;flex-shrink:0;">Líder</div><svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;margin-left:2px;"><path d="M7 4l5 5-5 5" stroke="#8892A4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="rider-row" onclick="event.stopPropagation();goOverlay('o-perfil-otro')" style="cursor:pointer;">
+          <div style="width:36px;height:36px;border-radius:50%;background:#3B82F6;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;flex-shrink:0;">LV</div>
+          <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:500;">Lucía Vera</div><div style="font-size:12px;color:var(--text2);">3 rutas completadas</div></div>
+          <div class="pill pill-gray" style="font-size:10px;flex-shrink:0;">Inscripta</div><svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;margin-left:2px;"><path d="M7 4l5 5-5 5" stroke="#8892A4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="rider-row" onclick="event.stopPropagation();goOverlay('o-perfil-otro')" style="cursor:pointer;">
+          <div style="width:36px;height:36px;border-radius:50%;background:#FF6B35;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;flex-shrink:0;">CP</div>
+          <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:500;">Carlos Pérez</div><div style="font-size:12px;color:var(--text2);">6 rutas completadas</div></div>
+          <div class="pill pill-gray" style="font-size:10px;flex-shrink:0;">Inscripto</div><svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;margin-left:2px;"><path d="M7 4l5 5-5 5" stroke="#8892A4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="rider-row" onclick="event.stopPropagation();goOverlay('o-perfil-otro')" style="cursor:pointer;">
+          <div style="width:36px;height:36px;border-radius:50%;background:#8B5CF6;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;flex-shrink:0;">RN</div>
+          <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:500;">Rocío Núñez</div><div style="font-size:12px;color:var(--text2);">21 rutas completadas</div></div>
+          <div class="pill pill-gray" style="font-size:10px;flex-shrink:0;">Inscripta</div><svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;margin-left:2px;"><path d="M7 4l5 5-5 5" stroke="#8892A4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="rider-row" onclick="event.stopPropagation();goOverlay('o-perfil-otro')" style="cursor:pointer;">
+          <div style="width:36px;height:36px;border-radius:50%;background:#14B8A6;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;color:#fff;flex-shrink:0;">DF</div>
+          <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:500;">Diego Ferrer</div><div style="font-size:12px;color:var(--text2);">1 ruta completada</div></div>
+          <div class="pill pill-gray" style="font-size:10px;flex-shrink:0;">Inscripto</div><svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;margin-left:2px;"><path d="M7 4l5 5-5 5" stroke="#8892A4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <div style="margin:0 16px 14px;background:rgba(200,255,0,.08);border:1px solid rgba(200,255,0,.3);border-radius:var(--r2);padding:12px 14px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:22px;height:22px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;">👑</div>
+          <div style="font-size:13px;color:var(--text);font-weight:600;font-family:'Syne',sans-serif;">Sos el organizador de esta salida</div>
+        </div>
+      </div>
+      <div style="padding:0 16px 10px;">
+        <div style="display:flex;gap:8px;">
+          <div onclick="showToast('Se precargan todos los datos, solo elegís la fecha')" style="flex:1;text-align:center;padding:11px;border-radius:var(--r3);background:var(--bg3);border:1px solid var(--border);font-family:'Syne',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;">Repetir</div>
+          <div onclick="showToast('Elegí a quién pasarle la organización')" style="flex:1;text-align:center;padding:11px;border-radius:var(--r3);background:var(--bg3);border:1px solid var(--border);font-family:'Syne',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;">Transferir</div>
+          <div onclick="showToast('La salida se cancela y se avisa al grupo')" style="flex:1;text-align:center;padding:11px;border-radius:var(--r3);background:var(--bg3);border:1px solid var(--border);font-family:'Syne',sans-serif;font-size:12.5px;font-weight:700;color:var(--secondary);cursor:pointer;">Cancelar</div>
+        </div>
+      </div>
       <div style="padding:0 16px 20px;">
-        <button style="width:100%;background:var(--accent3);color:#fff;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;border:none;border-radius:var(--r2);padding:15px;cursor:pointer;" onclick="showToast('✅ ¡Te uniste a Parque Rodó fácil!')">Unirse a la ruta</button>
+        <button style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;border-radius:var(--r2);padding:14px;cursor:pointer;" onclick="goOverlay('o-chat2')">Ir al chat del grupo</button>
       </div>
     </div>
   </div>
@@ -622,6 +900,11 @@ html,body{
       <div style="flex:1;"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;">Rambla al amanecer</div><div style="font-size:12px;color:var(--text2);">3 participantes · Hoy 06:30</div></div>
     </div>
     <div class="chat-area" id="chat-msgs-1">
+      <div style="text-align:center;margin:4px 0 14px;">
+        <div style="display:inline-block;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:9px 14px;font-size:11.5px;color:var(--text2);line-height:1.55;max-width:88%;">
+          Salida creada · Punto de encuentro: <b style="color:var(--text);">Puerto del Buceo</b><br>Mañana · 6:30 AM · Ruta · 42 km
+        </div>
+      </div>
       <div class="msg other"><div class="msg-meta">Javier · 20:14</div><div class="msg-bubble">Hola equipo! Mañana salimos a las 6:30 desde Buceo. Confirmen asistencia 🚴‍♂️</div></div>
       <div class="msg other"><div class="msg-meta">Ana · 20:18</div><div class="msg-bubble">Confirmada! Llevaré bidón extra por si alguien necesita 💧</div></div>
       <div class="msg mine"><div class="msg-meta">Tú · 20:21</div><div class="msg-bubble">Confirmado! ¿Alguien sabe el pronóstico del tiempo?</div></div>
@@ -641,6 +924,11 @@ html,body{
       <div style="flex:1;"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;">Parque Rodó fácil</div><div style="font-size:12px;color:var(--text2);">5 participantes · Mañana 08:00</div></div>
     </div>
     <div class="chat-area" id="chat-msgs-2">
+      <div style="text-align:center;margin:4px 0 14px;">
+        <div style="display:inline-block;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:9px 14px;font-size:11.5px;color:var(--text2);line-height:1.55;max-width:88%;">
+          Salida creada · Punto de encuentro: <b style="color:var(--text);">Parque Rodó</b><br>Domingo · 9:00 AM · Mixta · 18 km
+        </div>
+      </div>
       <div class="msg other"><div class="msg-meta">Tomás · 09:40</div><div class="msg-bubble">Hola! Nos vemos mañana en la entrada del museo 🏛️</div></div>
       <div class="msg other"><div class="msg-meta">Marina · 09:55</div><div class="msg-bubble">Primera vez que me uno, ¿el ritmo es muy exigente?</div></div>
       <div class="msg other"><div class="msg-meta">Tomás · 10:02</div><div class="msg-bubble">Para nada! Es super relajado, vamos a disfrutar la vista 😊</div></div>
@@ -735,6 +1023,78 @@ function showToast(msg){
 document.body.addEventListener('touchmove',function(e){
   if(e.touches.length>1) return;
 },{passive:false});
+
+    function descartarAviso(e){
+      e.stopPropagation();
+      var t=document.getElementById('tarjeta-sin-marcar');
+      if(t){ t.style.transition='opacity .25s'; t.style.opacity='0'; setTimeout(function(){t.remove();},250); }
+      showToast('Listo, no te lo mostramos mas');
+    }
+    function marcarResultado(e,r){
+      e.stopPropagation();
+      var t=document.getElementById('tarjeta-sin-marcar');
+      if(t){ t.style.transition='opacity .25s'; t.style.opacity='0'; setTimeout(function(){t.remove();},250); }
+      showToast(r==='Completé' ? 'Marcada como completada' : 'Marcada como abandonada');
+    }
+
+
+    var misSalidasOn = false;
+    function toggleMias(){
+      misSalidasOn = !misSalidasOn;
+      document.getElementById('f-mias').classList.toggle('activo', misSalidasOn);
+      aplicarFiltros();
+    }
+    function limpiarFiltros(){
+      document.getElementById('f-modalidad').value = '';
+      document.getElementById('f-nivel').value = '';
+      misSalidasOn = false;
+      document.getElementById('f-mias').classList.remove('activo');
+      aplicarFiltros();
+    }
+    function aplicarFiltros(){
+      var mod = document.getElementById('f-modalidad');
+      var niv = document.getElementById('f-nivel');
+      mod.classList.toggle('activo', mod.value !== '');
+      niv.classList.toggle('activo', niv.value !== '');
+      var visibles = 0;
+      var cards = document.querySelectorAll('.ruta-card');
+      Array.prototype.forEach.call(cards, function(c){
+        var ok = (mod.value === '' || c.dataset.modalidad === mod.value)
+              && (niv.value === '' || c.dataset.nivel === niv.value)
+              && (!misSalidasOn || c.dataset.mia === '1');
+        c.style.display = ok ? '' : 'none';
+        if(ok) visibles++;
+      });
+      var vacio = document.getElementById('empty-feed');
+      var titulo = document.getElementById('empty-titulo');
+      if(visibles === 0){
+        var partes = [];
+        if(mod.value) partes.push(mod.options[mod.selectedIndex].text);
+        if(niv.value) partes.push(niv.options[niv.selectedIndex].text.toLowerCase());
+        titulo.textContent = misSalidasOn && partes.length === 0
+          ? 'No estás anotado a ninguna salida'
+          : (partes.length ? 'No hay salidas de ' + partes.join(' ') : 'No hay salidas por ahora');
+        vacio.style.display = 'block';
+      } else {
+        vacio.style.display = 'none';
+      }
+    }
+
+    function showRecuperar(){
+      showToast('Te enviamos un email para restablecer tu contraseña. Revisá tu bandeja.');
+    }
+
+    function setFiltro(el, val){
+      var parent=el.parentElement;
+      Array.prototype.forEach.call(parent.children, function(c){
+        c.style.background='var(--bg3)'; c.style.color='var(--text)';
+        c.style.border='1px solid var(--border)';
+      });
+      el.style.background='var(--accent)'; el.style.color='#0A0C10'; el.style.border='none';
+    }
+    function showRecuperar(){
+      showToast('Te enviamos un email para restablecer tu contraseña. Revisá tu bandeja.');
+    }
 </script>
 </body>
 </html>
